@@ -1,0 +1,14 @@
+# bashrc file for ExBash.
+
+# Read and execute the original bashrc file.
+source ~/.bashrc
+
+# Set aliase.
+alias mounter='~/.config/exbash/plugins/mounter'
+
+# Reset PS1, and export it.
+# Empty PS1 causes issues with some software (e.g. Python venv),
+# so we set it to "{empty}" that will be replaced to "" by ExBash.
+export PS1="{empty}"
+
+# vim: expandtab tabstop=4 shiftwidth=4 fdm=marker

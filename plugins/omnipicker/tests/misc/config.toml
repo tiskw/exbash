@@ -1,0 +1,27 @@
+# Config file for exbash
+
+####################################################################################################
+# Plugins settings
+####################################################################################################
+[PLUGIN_OMNIPICKER]
+
+# Width of the filer windows.
+w1_ratio = 0.25
+w2_ratio = 0.45
+
+# Preview command for text files. Empty string means default preview.
+preview_cmd_txt = "batcat --color=always --paging=never --style=plain --theme=ansi --line-range=:64 {path}"
+
+# Preview command for binary files. Empty string means default preview.
+preview_cmd_bin = "xxd {path} | head -n 64"
+
+# Path to the history file.
+path_history = "/tmp/bash_history"
+
+# Process command for listing processes.
+ps_command = "ps aux"
+
+# The index of PID field in the output of "ps_command" above.
+idx_pid_field = 1
+ 
+# vim: expandtab shiftwidth=4 shiftwidth=4

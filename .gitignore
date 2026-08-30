@@ -1,0 +1,20 @@
+# Ignore build outputs.
+/build/**
+/release/**
+
+# Ignore plugins build outputs.
+/plugins/build/**
+
+# Ignore cache files.
+__pycache__
+.mypy_cache
+
+# Ignore test files.
+/tests/source
+/tests/run_test
+*.gcda
+*.gcno
+*.gcov
+lcov
+lcov.info
+

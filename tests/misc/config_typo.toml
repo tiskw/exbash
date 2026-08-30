@@ -1,0 +1,14 @@
+# Config file for exbash
+
+################################################################################
+# General settings
+################################################################################
+[GENELAR]
+
+# Height of drawing area.
+area_height = 8
+
+# Length of mergin in the column display.
+column_margin = 3
+
+# vim: expandtab shiftwidth=4 shiftwidth=4
