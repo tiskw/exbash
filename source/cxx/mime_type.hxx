@@ -1,0 +1,58 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// C++ header file: mime_type.hxx                                                               ///
+///                                                                                              ///
+/// This file defines the class `MimeType` that can judge mime type of the given file.           ///
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#ifndef MIME_TYPE_HXX
+#define MIME_TYPE_HXX
+
+// Include the headers of custom modules.
+#include "dtypes.hxx"
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Class definition
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MimeType
+// This class determines mime type from suffix of a file using `/usr/share/mime/globs`
+// in which matching of suffixes and mime types are written. In the constructor of FileType,
+// the file "/usr/share/mime/globs" will be parsed and the matching information is stored
+// to member variables. The file "/usr/share/mime/globs2" contains more rich information,
+// but "globs" is simpler and easy to use.
+{
+    public:
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // Constructors and destructors
+        ////////////////////////////////////////////////////////////////////////////////////////////
+
+        MimeType(void);
+        // Default constructor of MimeType.
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // Member functions
+        ////////////////////////////////////////////////////////////////////////////////////////////
+
+        String get(StringView path) const;
+        // Returns mime type of the given file.
+        //
+        // [Args]
+        //   path (StringView): [IN] Path to a file.
+        //
+        // [Returns]
+        //   (String): Mime type information.
+
+    private:
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // Member variables
+        ////////////////////////////////////////////////////////////////////////////////////////////
+
+        StringMap mime_database;
+        // Mime type database, a map of suffix to mime type.
+};
+
+#endif
+
+// vim: expandtab tabstop=4 shiftwidth=4 fdm=marker

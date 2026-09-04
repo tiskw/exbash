@@ -1,0 +1,45 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// C++ header file: grid_model.hxx                                                              ///
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#ifndef GRID_MODEL_HXX
+#define GRID_MODEL_HXX
+
+// Include custom headers.
+#include "line_model.hxx"
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Class declarations
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class GridModel : public LineModel
+// Model class for the grid picker.
+// Now it is almost the same as LineModel, but the keybind is overridden.
+{
+    public:
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // Constructors and destructors
+        ////////////////////////////////////////////////////////////////////////////////////////////
+
+        explicit GridModel(const Vector<String>& items);
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // Public member functions
+        ////////////////////////////////////////////////////////////////////////////////////////////
+
+        String process_key(StringView key, StringView grep_str_win, Tuple<int32_t, int32_t> grid_shape);
+        // Process a key input and update the model state accordingly.
+        //
+        // [Args]
+        //   key          (StringView)             : [IN] The key input to process.
+        //   grep_str_win (StringView)             : [IN] The current grep filter string from the window.
+        //   grid_shape   (Tuple<int32_t, int32_t>): [IN] The number of rows and columns in the grid.
+        //
+        // [Returns]
+        //   (String): The grep filter string after processing the key input.
+};
+
+#endif
+
+// vim: expandtab tabstop=4 shiftwidth=4 fdm=marker

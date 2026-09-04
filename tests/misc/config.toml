@@ -1,0 +1,148 @@
+# Config file for exbash
+
+################################################################################
+# General settings
+################################################################################
+[GENERAL]
+
+# Height of drawing area.
+area_height = 8
+
+# Size of padding in the column display.
+column_padding = 3
+
+# Path to history file.
+path_history = "/tmp/bash_history"
+
+# The maximum number of histories to read.
+max_hist_size = 1000
+
+# Prefix and postfix of the time stamp.
+# For example, you can set ANSI color code to colorize the time stamp.
+datetime_pre  = "\u001B[38;2;112;120;128m["
+datetime_post = "]\u001B[0m "
+
+# Prefix and postfix of the history hint.
+# For example, you can set ANSI color code to colorize history hint.
+histhint_pre  = "\u001B[38;2;112;120;128m"
+histhint_post = "\u001B[0m"
+
+# Horizontal line character and it's color.
+hline_char  = "\u23AF"
+hline_color = "\u001B[38;2;112;120;128m"
+
+# Path to initial commands and bash info.
+# It is recommended to create them under "/tmp/exbash".
+path_cmnd_info = "/dev/shm/exbash/cmnd_info.txt"
+path_bash_info = "/dev/shm/exbash/bash_info.txt"
+
+# Output path of plugin commands.
+output_plugin = "/dev/shm/exbash/plugin.out"
+
+################################################################################
+# Prompt settings
+################################################################################
+[PROMPT]
+
+# Prompts for editing area. The layout of prompt is the following.
+#
+# <- ps0l ---------------------------------><- ps0r ->
+# <- ps1i or ps1n -> <- user input ------------------>
+# <- ps2 -> <- user input --------------------------->
+#
+ps0l = """{VIRTUAL_ENV_PROMPT}\
+\u001B[38;2;204;102;102m{user} \u001B[38;2;197;200;198m: \
+\u001B[38;2;181;189;104m{host} \u001B[38;2;197;200;198m: \
+\u001B[38;2;235;193;111m{date} \u001B[38;2;197;200;198m: \
+\u001B[38;2;129;162;190m{time} \u001B[38;2;197;200;198m: \
+\u001B[38;2;178;148;187m{cwd}\u001B[0m"""
+ps0r = "{git}"
+ps1i = "\u001B[37m=>>\u001B[m "
+ps1n = "\u001B[37m<<=\u001B[m "
+ps2  = "\u001B[37m...\u001B[m "
+
+################################################################################
+# Keybind settings
+################################################################################
+[KEYBIND]
+
+"^F" = "{path_plugin}/filechooser -o {output_plugin} -l {lhs} -r {rhs}"
+"^L" = "clear"
+"^U" = "{path_plugin}/textchooser -m hist -o {output_plugin} -l {lhs} -r {rhs}"
+"^P" = "{path_plugin}/textchooser -m proc -o {output_plugin} -l {lhs} -r {rhs}"
+"^V" = "xclip -o"
+
+################################################################################
+# Completion settings
+################################################################################
+[COMPLETION]
+
+completions = [
+
+    # Apt command completions.
+    [["apt", ".*"], "subcmd", "apt --help"],
+
+    # Cat command: grep completion from the test config file (test-only entry).
+    [["cat", ".*"], "grep", "misc/config.toml\t(area_height|column_padding|max_hist_size)"],
+
+    # Docker command completions.
+    [["docker", "exec", ">>"], "shell",  "docker container ls -a --format '{{.Names}}'"],
+    [["docker", "run",  ">>"], "shell",  "docker image ls --format '{{.Repository}}:{{.Tag}}'"],
+    [["docker", ".*"], "subcmd+bashcomp", ""],
+
+    # Git command completions.
+    [["git", "branch",   ">>"], "shell",  "git for-each-ref --format='%(refname:lstrip=2)' refs/heads refs/remotes"],
+    [["git", "checkout", ">>"], "shell",  "git for-each-ref --format='%(refname:lstrip=2)' refs/heads refs/remotes"],
+    [["git", "merge",    ">>"], "shell",  "git for-each-ref --format='%(refname:lstrip=2)' refs/heads refs/remotes"],
+    [["git", "push",     ">>"], "shell",  "git for-each-ref --format='%(refname:lstrip=2)' refs/heads refs/remotes"],
+    [["git", ".*"],             "subcmd", "git --help"],
+
+    # Make command.
+    [["make", ".*"], "shell", "grep -Eo '^[a-z]+' Makefile"],
+
+    # Ssh command completions.
+    [["ssh", ".*"], "shell", "cat ~/.ssh/config 2>/dev/null | grep '^Host ' 2>/dev/null | cut -b 6-"],
+
+    # Use carapace for apk command.
+    [["apk", ".*"], "carapace", ""],
+
+    # Low priority completions.
+    [["[./~].*",],       "path",    ""],
+    [[".+",],            "command", ""],
+    [[">>", "-.*"],      "option",  ""],
+    [[">>", "FILE", ""], "preview", ""],
+    [[">>", ""],         "path",    ""],
+    [[">>", ".*"],       "bashcomp", ""],
+]
+
+################################################################################
+# Preview settings
+################################################################################
+[PREVIEW]
+
+# An ordered list of preview table, where the format of the key is MIME type splitted
+# by "/". You are able to check the file MIME type by the command `file --mime <filepath>`.
+previews = [
+    # Directory.
+    ["inode/directory", "timeout 0.1s ls -hl --color=always --group-directories-first '{path}'"],
+
+    # Text file: colorize file.
+    ["text/*",           "timeout 0.1s highlight --force -O ansi '{path}'"],
+    ["application/x-sh", "timeout 0.1s highlight --force -O ansi '{path}'"],
+
+    # Media file: display media infomation.
+    ["image/*", "file '{path}' | sed 's/, /\\n/g'"],
+    ["video/*", "file '{path}' | sed 's/, /\\n/g'"],
+
+    # Archive file: list archive contents.
+    ["*/x-7z-compressed", "timeout 0.1s 7z l    '{path}'"],
+    ["*/zip",             "timeout 0.1s zipinfo '{path}'"],
+]
+
+# Delimiter of the preview window.
+preview_delim = " \u2502 "
+
+# Ratio of the preview window.
+preview_ratio = 0.45
+
+# vim: expandtab shiftwidth=4 shiftwidth=4

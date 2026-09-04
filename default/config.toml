@@ -1,0 +1,149 @@
+# Config file for exbash
+
+####################################################################################################
+# General settings
+####################################################################################################
+[GENERAL]
+
+# Height of drawing area.
+area_height = 8
+
+# Size of padding in the column display.
+column_padding = 3
+
+# Path to history file.
+path_history = "~/.bash_history"
+
+# The maximum number of histories to read.
+max_hist_size = 5000
+
+# Prefix and postfix of the time stamp.
+# For example, you can set ANSI color code to colorize the time stamp.
+datetime_pre  = "\u001B[38;2;112;120;128m["
+datetime_post = "]\u001B[0m "
+
+# Prefix and postfix of the history hint.
+# For example, you can set ANSI color code to colorize history hint.
+histhint_pre  = "\u001B[38;2;112;120;128m"
+histhint_post = "\u001B[0m"
+
+# Horizontal line character and its color.
+hline_char  = "\u23AF"
+hline_color = "\u001B[38;2;112;120;128m"
+
+# Path to initial commands and bash info.
+# It is recommended to create them under "/tmp/exbash".
+path_cmnd_info = "/dev/shm/exbash/cmnd_info.txt"
+path_bash_info = "/dev/shm/exbash/bash_info.txt"
+
+# Output path of plugin commands.
+output_plugin = "/dev/shm/exbash/plugin.out"
+
+####################################################################################################
+# Prompt settings
+####################################################################################################
+[PROMPT]
+
+# Prompts for editing area. The layout of prompt is the following.
+#
+# <- ps0l ---------------------------------><- ps0r ->
+# <- ps1i or ps1n -> <- user input ------------------>
+# <- ps2 -> <- user input --------------------------->
+#
+ps0l = """{PS1}\
+\u001B[38;2;204;102;102m{USER} \u001B[38;2;197;200;198m: \
+\u001B[38;2;181;189;104m{host} \u001B[38;2;197;200;198m: \
+\u001B[38;2;235;193;111m{date} \u001B[38;2;197;200;198m: \
+\u001B[38;2;129;162;190m{time} \u001B[38;2;197;200;198m: \
+\u001B[38;2;178;148;187m{cwd}\u001B[0m"""
+ps0r = "{git}"
+ps1i = "\u001B[37m=>>\u001B[m "
+ps1n = "\u001B[37m<<=\u001B[m "
+ps2  = "\u001B[37m...\u001B[m "
+
+####################################################################################################
+# Keybind settings
+####################################################################################################
+[KEYBIND]
+
+"^F" = "{path_plugin}/omnipicker -m file -o {output_plugin} -l {lhs} -r {rhs}"
+"^L" = "clear"
+"^U" = "{path_plugin}/omnipicker -m hist -o {output_plugin} -l {lhs} -r {rhs}"
+"^P" = "{path_plugin}/omnipicker -m pid -o {output_plugin} -l {lhs} -r {rhs}"
+"^V" = "xclip -o"
+
+####################################################################################################
+# Completion settings
+####################################################################################################
+[COMPLETION]
+
+completions = [
+
+    # Bash-completion-based command completions.
+    [["apt",     ">>", ".*"], "subcmd+bashcomp", "apt --help"],
+    [["kubectl", ">>", ".*"], "subcmd+bashcomp", "kubectl --help"],
+    [["docker",  ">>", ".*"], "subcmd+bashcomp", "docker --help"],
+    [["git",     ">>", ".*"], "subcmd+bashcomp", "git --help"],
+
+    # Make command completions.
+    [["make", ".*"], "grep", "Makefile\t(^[a-zA-Z0-9_-]+):"],
+
+    # Ssh command completions.
+    [["ssh", ".*"], "grep", "~/.ssh/config\tHost ([a-zA-Z0-9_-]+)"],
+
+    # General completions.
+    [["[./~].*",],       "path",    ""],
+    [[".+",],            "command", ""],
+    [[">>", "-.*"],      "option",  ""],
+    [[">>", "FILE", ""], "preview", ""],
+    [[">>", ".*"],       "path",    ""],
+]
+
+####################################################################################################
+# Preview settings
+####################################################################################################
+[PREVIEW]
+
+# An ordered list of preview table, where the format of the key is MIME type splitted
+# by "/". You are able to check the file MIME type by the command `file --mime <filepath>`.
+previews = [
+
+    # Text files: preview using batcat.
+    ["text/*", "batcat --color=always --paging=never --style=plain --theme=ansi --line-range=:64 {path}"],
+
+    # Archive file: list archive contents.
+    ["*/x-7z-compressed", "timeout 0.1s 7z l    {path}"],
+    ["*/zip",             "timeout 0.1s zipinfo {path}"],
+]
+
+# Delimiter of the preview window.
+preview_delim = " \u2502 "
+
+# Ratio of the preview window.
+preview_ratio = 0.45
+
+####################################################################################################
+# Plugins settings
+####################################################################################################
+[PLUGIN_OMNIPICKER]
+
+# Width of the filer windows.
+w1_ratio = 0.25
+w2_ratio = 0.45
+
+# Preview command for text files. Empty string means default preview.
+preview_cmd_txt = "batcat --color=always --paging=never --style=plain --theme=ansi --line-range=:64 {path}"
+
+# Preview command for binary files. Empty string means default preview.
+preview_cmd_bin = "xxd {path} | head -n 64"
+
+# Path to the history file.
+path_history = "/tmp/bash_history"
+
+# Process command for listing processes.
+ps_command = "ps aux"
+
+# The index of PID field in the output of "ps_command" above.
+idx_pid_field = 1
+ 
+# vim: expandtab shiftwidth=4 shiftwidth=4
