@@ -232,12 +232,9 @@ function get_bash_editor_mode ()
     local mode_status
     mode_status=$(set -o)
 
-    if echo "$mode_status" | grep '^emacs\s*on$'; then
-        echo "emacs"
-    elif echo "$mode_status" | grep -Eq '^vi\s*on$'; then
-        echo "vi"
-    else
-        echo "emacs"
+    if   echo "$mode_status" | grep -Eq '^emacs\s*on$'; then echo "emacs"
+    elif echo "$mode_status" | grep -Eq '^vi\s*on$';    then echo "vi"
+    else                                                     echo "emacs"
     fi
 
 }   # }}}
