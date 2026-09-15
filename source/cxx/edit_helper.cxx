@@ -256,7 +256,7 @@ namespace
 
     }   // }}}
 
-    Tuple<bool, SizeType> match(const Vector<String>& patterns, const Vector<StringView>& tokens, const Vector<std::regex>& patterns_regex)
+    bool match(const Vector<String>& patterns, const Vector<StringView>& tokens, const Vector<std::regex>& patterns_regex)
     // Return True if the given tokens matched with the given patterns.
     // The arguments `tokens` is a list of strings, and the argument `patterns`
     // are list of regular expression strings with the following extra special commands:
@@ -269,16 +269,12 @@ namespace
     //   tokens   (const Vector<String>&): [IN] List of strings to be matched.
     //
     // [Returns]
-    //   (bool)    : True is the given tokens matched with the given patterns.
-    //   (SizeType): Hash value of the matched tokens.
+    //   (bool): True is the given tokens matched with the given patterns.
     //
     {   // {{{
 
         // Initialize token index.
         SizeType index_token = 0;
-
-        // Initialize
-        uint64_t hash_val = hash(nullptr);
 
         // Run the for-loop based on the pattern index.
         for (SizeType index_pattern = 0; index_pattern < patterns.size(); ++index_pattern)
@@ -286,7 +282,7 @@ namespace
             // If the number of patterns is longer than the number of tokens
             // (i.e. token finished but pattern is exists yet), then returns false.
             if (index_token >= tokens.size())
-                return {false, 0};
+                return false;
 
             // Select target pattern and token.
             const String&    pattern = patterns[index_pattern];
@@ -301,7 +297,7 @@ namespace
 
             // Case 2: pattern is "FILE" but the file not exists.
             else if (pattern == "FILE" and (not stdfs::exists(token)))
-                return {false, 0};
+                return false;
 
             // Case 3: pattern is "FILE" and the file exists.
             else if (pattern == "FILE")
@@ -309,23 +305,17 @@ namespace
 
             // Case 4: others.
             else if (not regex_match(token.begin(), token.end(), pattern_regex))
-                return {false, 0};
-
-            // Update the hash value if the pattern is not ">>" that means skip.
-            // Note: In order to avoid hash collision by an empty token, the hash value of
-            //       an empty token is computed as the hash value of a newline character "\n".
-            if (pattern != ">>")
-                hash_val = hash(token.empty() ? "\n" : token, hash_val);
+                return false;
 
             ++index_token;
         };
 
         // No unprocessed tokens remains if the token matches with the pattern.
-        return {index_token == tokens.size(), hash_val};
+        return {index_token == tokens.size()};
 
     }   // }}}
 
-    Tuple<CompType, String, SizeType> get_target(const Vector<StringView>& tokens, const Vector<Completion>& completions, const Vector<Vector<std::regex>>& vec_patterns_regex)
+    Tuple<CompType, String> get_target(const Vector<StringView>& tokens, const Vector<Completion>& completions, const Vector<Vector<std::regex>>& vec_patterns_regex)
     // Returns a pair of target completion type and its optional string.
     //
     // [Args]
@@ -346,14 +336,14 @@ namespace
             const Vector<std::regex>& patterns_regex = vec_patterns_regex[idx];
 
             // Check if the given tokens match with the current pattern.
-            const auto [is_matched, hash_val] = match(patterns, tokens, patterns_regex);
+            const bool is_matched = match(patterns, tokens, patterns_regex);
 
             // Returns the current completion type and its optional string.
             if (is_matched)
-                return {comp_type, option, hash_val};
+                return {comp_type, option};
         }
 
-        return {CompType::NONE, String(""), SizeType(0)};
+        return {CompType::NONE, String("")};
 
     }   // }}}
 }
@@ -394,16 +384,7 @@ Vector<String> EditHelper::candidate(StringView lhs)
         tokens.push_back(StringView(""));
 
     // Get completion type and its optional string.
-    const auto& [comp_type, option, hash_mat] = get_target(tokens, this->completions, this->shared_future_vec_patterns_regex.get());
-
-    // If the completion key (= matched token) exists in the cache of matched token, use it.
-    // NOTE: BASHCOMP is excluded from mat-cache because its pattern [">>", ".*"] skips all leading
-    //       tokens (including the command name) when computing hash_mat, so two inputs with the
-    //       same partial word but different commands (e.g. "pip insta" vs "cargo insta") would
-    //       incorrectly share a single cache entry.  The lhs-cache (keyed on the full input) is
-    //       sufficient for BASHCOMP.
-    // if ((comp_type != CompType::BASHCOMP) and (comp_type != CompType::SC_AND_BC) and this->cache_cands_mat.contains(hash_mat))
-    //     return this->candidate_from_cache(this->cache_cands_mat, hash_mat);
+    const auto& [comp_type, option] = get_target(tokens, this->completions, this->shared_future_vec_patterns_regex.get());
 
     // Clear completion candidates before computed by the following switch statement.
     this->cands.clear();
@@ -433,12 +414,7 @@ Vector<String> EditHelper::candidate(StringView lhs)
 
     // Register the completion result to the cache.
     if (comp_type != CompType::NONE)
-    {
         this->cache_cands_lhs[hash_lhs] = {this->cands, this->lines};
-        // BASHCOMP is excluded from mat-cache for the same reason explained above.
-        if (comp_type != CompType::BASHCOMP)
-            this->cache_cands_mat[hash_mat] = {this->cands, this->lines};
-    }
 
     return this->lines;
 
