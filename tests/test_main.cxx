@@ -3142,7 +3142,7 @@ int main(void)
 
     std::cout << "test finished" << std::endl;
 
-    return EXIT_SUCCESS;
+    return passed ? EXIT_SUCCESS : EXIT_FAILURE;
 
 }   // }}}
 
