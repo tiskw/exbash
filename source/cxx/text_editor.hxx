@@ -108,7 +108,7 @@ class TextEditor
         // Static utility functions (used by derived editor classes)
         ////////////////////////////////////////////////////////////////////////////////////////////
 
-        static Vector<CharInfo> collect_chars(StringView sv);
+        static Vector<CharInfo> collect_char_info(StringView sv);
         // Build a vector of (byte_pos, CharClass) for every UTF-8 character in sv.
         //
         // [Args]
@@ -143,11 +143,17 @@ class TextEditor
         // Protected member variables
         ////////////////////////////////////////////////////////////////////////////////////////////
 
-        Vector<GapBuffer> buffers;
-        // All text buffers.
+        GapBuffer buffer;
+        // Current text buffer.
 
-        uint64_t index;
+        const Deque<String>& hists_ref;
+        // Reference to the history of text buffers.
+
+        int32_t index;
         // Current index of buffers.
+
+        String saved_edit;
+        // Saved editing buffer when switching to history buffers.
 
         Mode mode;
         // Current editing mode.
@@ -156,11 +162,11 @@ class TextEditor
         // Protected functions
         ////////////////////////////////////////////////////////////////////////////////////////////
 
-        void change_buffer(int64_t delta);
+        void change_buffer(int32_t delta);
         // Change the current buffer by the given delta.
         //
         // [Args]
-        //   delta (int64_t): [IN] Delta to change the buffer index.
+        //   delta (int32_t): [IN] Delta to change the buffer index.
 
               GapBuffer& current_buffer(void);
         const GapBuffer& current_buffer(void) const;

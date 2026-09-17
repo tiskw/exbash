@@ -8,6 +8,9 @@
 // Include the standard library headers.
 #include <cctype>
 
+// Include the headers of custom modules.
+#include "utils.hxx"
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // File-local helper functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -40,37 +43,33 @@ namespace
 // TextEditor: Constructors and destructors
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-TextEditor::TextEditor(StringView lhs, StringView rhs, const Deque<String>& hists) : mode(Mode::INSERT)
-{   // {{{
-
-    // Reserve space for the gap buffers.
-    this->buffers.reserve(hists.size() + 1);
-
-    // Register the buffer histories.
-    for (const String& hist : hists)
-        this->buffers.emplace_back(GapBuffer(hist, ""));
-
-    // Create the current editing buffer.
-    this->buffers.emplace_back(GapBuffer(lhs, rhs));
-    this->index = this->buffers.size() - 1;
-
-}   // }}}
+TextEditor::TextEditor(StringView lhs, StringView rhs, const Deque<String>& hists)
+    : buffer(lhs, rhs), hists_ref(hists), index(hists.size()), mode(Mode::INSERT)
+{ /* Do nothing, initializer list only. */ }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // TextEditor: Protected static utility functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Vector<TextEditor::CharInfo> TextEditor::collect_chars(StringView sv)
+Vector<TextEditor::CharInfo> TextEditor::collect_char_info(StringView sv)
 {   // {{{
 
-    Vector<CharInfo> chars;
-    SizeType p = 0;
-    while (p < sv.size())
+    // Initialize the output vector.
+    Vector<TextEditor::CharInfo> chars;
+
+    // Initialize the position index.
+    SizeType pos = 0;
+
+    while (pos < sv.size())
     {
-        chars.push_back({p, classify_char(sv.data() + p)});
-        uint8_t bsz = utf8_byte_size(static_cast<uint8_t>(sv[p]));
-        p += (bsz > 0 && p + bsz <= sv.size()) ? bsz : 1;
+        // Record the byte position and character class of the current character.
+        chars.push_back({pos, classify_char(sv.data() + pos)});
+
+        // Advance the index by the byte size of the current UTF-8 character.
+        uint8_t delta = utf8_byte_size(static_cast<uint8_t>(sv[pos]));
+        pos += ((delta > 0) and (pos + delta <= sv.size())) ? delta : 1;
     }
+
     return chars;
 
 }   // }}}
@@ -78,15 +77,23 @@ Vector<TextEditor::CharInfo> TextEditor::collect_chars(StringView sv)
 String TextEditor::extract_front(StringView sv, PtrDiff n)
 {   // {{{
 
-    if (n <= 0 || sv.empty()) return "";
+    // Do nothing if n is non-positive or sv is empty.
+    if ((n <= 0) or sv.empty()) return "";
+
+    // Initialize the position index and character count.
     SizeType pos   = 0;
     PtrDiff  count = 0;
-    while (pos < sv.size() && count < n)
+
+    while ((pos < sv.size()) and (count < n))
     {
+        // Advance the position index by the byte size of the current UTF-8 character.
         uint8_t bsz = utf8_byte_size(static_cast<uint8_t>(sv[pos]));
         pos += (bsz > 0 && pos + bsz <= sv.size()) ? bsz : 1;
+
+        // Increment the character count.
         ++count;
     }
+
     return String(sv.data(), pos);
 
 }   // }}}
@@ -94,9 +101,17 @@ String TextEditor::extract_front(StringView sv, PtrDiff n)
 String TextEditor::extract_back(StringView sv, PtrDiff n)
 {   // {{{
 
-    if (n <= 0 || sv.empty()) return "";
-    const auto chars = collect_chars(sv);
-    if (n >= static_cast<PtrDiff>(chars.size())) return String(sv);
+    // Do nothing if n is non-positive or sv is empty.
+    if ((n <= 0) or sv.empty()) return "";
+
+    // Collect the character information for sv.
+    const Vector<TextEditor::CharInfo> chars = collect_char_info(sv);
+
+    // Return the entire string if n exceeds the number of characters in sv.
+    if (n >= static_cast<PtrDiff>(chars.size()))
+        return String(sv);
+
+    // Otherwise, return the last n characters of sv.
     SizeType start = chars[chars.size() - n].byte_pos;
     return String(sv.data() + start, sv.size() - start);
 
@@ -122,27 +137,29 @@ void TextEditor::set(StringView lhs, StringView rhs)
 // TextEditor: Protected functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void TextEditor::change_buffer(int64_t delta)
+void TextEditor::change_buffer(int32_t delta)
 {   // {{{
 
-    // Do nothing if there is no buffer.
-    if (this->buffers.empty()) return;
-
     // Get the current buffer size.
-    uint64_t size = this->buffers.size();
+    int32_t size = static_cast<int32_t>(this->hists_ref.size());
+
+    // If the current buffer is the editing buffer, save it to the save buffer.
+    if (this->index == size)
+        this->saved_edit = this->buffer.serialize();
 
     // Update the buffer index.
-    if (delta > 0)
-        this->index = ((this->index + delta) < size) ? (this->index + delta) : (size - 1);
-    if (delta < 0)
-        this->index = (this->index >= static_cast<uint64_t>(-delta)) ? (this->index + delta) : 0;
+    this->index = clip(this->index + delta, 0, size);
+
+    // Update the current buffer data.
+    if (this->index < size) { this->buffer.set(this->hists_ref[this->index], ""); }
+    else                    { this->buffer.set(this->saved_edit,             ""); }
 
 }   // }}}
 
 GapBuffer& TextEditor::current_buffer(void)
-{ return this->buffers[this->index]; }
+{ return this->buffer; }
 
 const GapBuffer& TextEditor::current_buffer(void) const
-{ return this->buffers[this->index]; }
+{ return this->buffer; }
 
 // vim: expandtab tabstop=4 shiftwidth=4 fdm=marker
