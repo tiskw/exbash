@@ -66,11 +66,20 @@ path_config=$(select_existing_file "${config_files[@]}")
 
 # Define temporary directory.
 # NOTES: Use a temporary directory in RAM for temporary files that are frequently rewritten.
-tmpdir_rom="/tmp/exbash"
-tmpdir_ram="/dev/shm/exbash"
+tmpdir_rom="/tmp/exbash-$(id -u)"
+tmpdir_ram="/dev/shm/exbash-$(id -u)"
+
+# Change the permissions of the temporary directories to be accessible only by the current user.
+mkdir -p -m 700 "${tmpdir_rom}" || exit 1
+mkdir -p -m 700 "${tmpdir_ram}" || exit 1
+
+# Check if the temporary directories are owned by the current user.
+if [ ! -O "${tmpdir_rom}" ] || [ ! -O "${tmpdir_ram}" ]; then
+    echo "exbash: temporary directory is owned by another user, requires immediate action." >&2
+fi
 
 # Define the "exbash_readcmd" command path.
-readcmd="${tmpdir_rom}/exbash_readcmd"
+readcmd="${tmpdir_rom}/exbash_readcmd_${exbash_version//./-}"
 
 #---------------------------------------------------------------------------------------------------
 # Step 1: Bash compatibility fallback.
@@ -133,9 +142,11 @@ function extract_binary_and_save ()
         # Find the starting line of the binary in this script.
         PAYLOAD_LINE=$(awk '/^__PAYLOAD_BELOW__/ {print NR + 1; exit 0;}' "${my_self}")
 
-        # Extract binary.
-        tail -n +"${PAYLOAD_LINE}" "${my_self}" > "${readcmd}"
-        chmod +x "${readcmd}"
+        # Extract the binary part of this script to a temporary file, and then move it to the target path.
+        tmpfile=$(mktemp "${tmpdir_rom}/exbash_readcmd.XXXXXX") || exit 1
+        tail -n +"${PAYLOAD_LINE}" "${my_self}" > "${tmpfile}"
+        chmod +x "${tmpfile}"
+        mv -f "${tmpfile}" "${readcmd}"
 
     fi
 
@@ -245,7 +256,8 @@ function exbash_main_loop ()
     readcmd="${1}"
     path_output="${2}"
     path_config="${3}"
-    path_bash_info="${4}"
+    path_cmnd_info="${4}"
+    path_bash_info="${5}"
 
     # Create a command string to run "exbash_readcmd" with the output file and config file.
     cmd_readcmd="${readcmd} -o ${path_output}"
@@ -254,7 +266,9 @@ function exbash_main_loop ()
     fi
 
     # Run "exbash_readcmd" in the background to generate the cache of path commands.
-    ${cmd_readcmd} --run generate_path_commands_cache &
+    if [[ ! -f "${path_cmnd_info}" ]]; then
+        ${cmd_readcmd} --run generate_path_commands_cache &
+    fi
 
     # Starts the main loop.
     while true; do
@@ -286,8 +300,17 @@ function exbash_main_loop ()
             break
         fi
 
+        # Rehash the command cache.
+        if [ "${user_command}" = "rehash" ]; then
+            echo "Regenerating the command cache..."
+            ${readcmd} --run generate_path_commands_cache
+
         # Execute the user command.
-        eval "${user_command}"
+        else
+            eval "${user_command}"
+        fi
+
+        # Print one empty line to separate the end of output from the next prompt.
         echo ""
 
         # Append the user input to the history file.
@@ -324,7 +347,7 @@ export EXBASH_SHELL="$0"
 export SHELL="${exbash_real_bash}"
 
 # Start the main loop of ExBash.
-exbash_main_loop "${readcmd}" "${path_output}" "${path_config}" "${path_bash_info}"
+exbash_main_loop "${readcmd}" "${path_output}" "${path_config}" "${path_cmnd_info}" "${path_bash_info}"
 
 #---------------------------------------------------------------------------------------------------
 # Step 6: Post processings.
