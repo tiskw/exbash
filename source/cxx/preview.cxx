@@ -60,10 +60,13 @@ namespace
         // Case 3: binary file.
         else
         {
-            String result;
-            result += "<Binary file>\n";
-            result += std::format("  Size: {:L} bytes", stdfs::file_size(path));
-            return result;
+            // Get the file size.
+            std::error_code ec;
+            const auto size = stdfs::file_size(path, ec);
+            if (ec) return "<Binary file>\n  Size: unknown";
+
+            // Return the preview output for binary files.
+            return std::format("<Binary file>\n  Size: {:L} bytes", size);
         }
 
         return "";

@@ -51,13 +51,14 @@ String MimeType::get(StringView path) const
 {   // {{{
 
     // Do nothing if the path is not a file.
-    if (stdfs::is_directory(path))
+    std::error_code ec;
+    if (stdfs::is_directory(path, ec) and not ec)
         return "inode/directory";
 
     // Get file name as a preprocessing for pattern matching.
     const String suffix = Path(path).extension();
 
-    //
+    // Get mime type string from the database.
     return (this->mime_database.contains(suffix)) ? this->mime_database.at(suffix) : "text/plain";
 
 }   // }}}

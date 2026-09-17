@@ -346,6 +346,60 @@ namespace
         return {CompType::NONE, String("")};
 
     }   // }}}
+
+    const char* get_color(const String& name, const Path& path)
+    // Get color code based on the file type.
+    //
+    // [Args]
+    //   path (const Path&): [IN] File path for checking the file type.
+    //
+    // [Returns]
+    //   (const char*): Color code for the file type.
+    //
+    {   // {{{
+
+        // Case 1: Directory.
+        if ((name.size() > 0) and (name.back() == '/'))
+            return "\x1B[94m";
+
+        // Case 2: executable file.
+        std::error_code ec;
+        const stdfs::file_status status = stdfs::status(path, ec);
+        if ((not ec) and ((status.permissions() & stdfs::perms::owner_exec) != stdfs::perms::none))
+            return "\x1B[92m";
+
+        // Otherwise, return default color code.
+        return "\x1B[0m";
+
+    };  // }}}
+
+    String colorize_name(const String& name, const Path& path, const String& query_key)
+    // Colorize the file name based on the file type and the user input query key.
+    //
+    // [Args]
+    //   name      (const String&): [IN] File name to be colorized.
+    //   path      (const Path&  ): [IN] File path for checking the file type.
+    //   query_key (const String&): [IN] User input query key for colorization.
+    //
+    // [Returns]
+    //   (String): Colorized file name for display.
+    //
+    {   // {{{
+
+        // Initialize the color code.
+        const char* color_code = get_color(name, path);
+
+        // Returns withour query colorization if the query key is empty or the query key is invalid.
+        if (query_key.empty() or name.size() < query_key.size())
+            return color_code + name + "\x1B[0m";
+
+        // Colorize the matched query key.
+        String result = "\x1B[35m" + name + "\x1B[0m";
+        result.insert(query_key.size() + 5, color_code);
+
+        return result;
+
+    };  // }}}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -575,38 +629,6 @@ void EditHelper::cands_carapace(const Vector<StringView>& tokens)
 
 void EditHelper::cands_filepath(const Vector<StringView>& tokens)
 {   // {{{
-
-    constexpr auto colorize_name = [](const String& name, const Path& path, const String& query_key) noexcept -> String
-    // Colorize the file name based on the file type and the user input query key.
-    //
-    // [Args]
-    //   name      (const String&): [IN] File name to be colorized.
-    //   path      (const Path&  ): [IN] File path for checking the file type.
-    //   query_key (const String&): [IN] User input query key for colorization.
-    //
-    // [Returns]
-    //   (String): Colorized file name for display.
-    {
-        const char* color_code = "\x1B[0m";
-
-        // Case 1: Directory.
-        if ((name.size() > 0) and (name.back() == '/'))
-            color_code = "\x1B[94m";
-
-        // Case 2: executable file.
-        else if ((stdfs::status(path).permissions() & stdfs::perms::owner_exec) != stdfs::perms::none)
-             color_code = "\x1B[92m";
-
-        // Returns withour query colorization if the query key is empty or the query key is invalid.
-        if (query_key.empty() or name.size() < query_key.size())
-            return color_code + name + "\x1B[0m";
-
-        // Colorize the matched query key.
-        String result = "\x1B[35m" + name + "\x1B[0m";
-        result.insert(query_key.size() + 5, color_code);
-
-        return result;
-    };
 
     // Split user input token to a tuple of:
     //   * directory path to be searched,
