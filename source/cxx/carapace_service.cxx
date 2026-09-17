@@ -83,11 +83,10 @@ Generator<Pair<StringView, StringView>> CarapaceService::complete(const Vector<S
             for (const json& item : result_json["values"])
             {
                 // Get the completion candidate and its display string from the JSON object.
-                const String value       = item.value("value",       "");
-                // const String description = item.value("description", "");
-                const String display     = item.value("display",     "");
-                const String style       = item.value("style",       "");
-                const String tag         = item.value("tag",         "");
+                const String value   = item.value("value",       "");
+                const String display = item.value("display",     "");
+                const String style   = item.value("style",       "");
+                const String tag     = item.value("tag",         "");
 
                 // Check if the completion candidate is a directory based on its tag.
                 if ((not is_dir_completion) and (tag == "files"))
@@ -105,7 +104,7 @@ Generator<Pair<StringView, StringView>> CarapaceService::complete(const Vector<S
             if (is_dir_completion)
                 std::sort(this->cache[hash_val].begin(), this->cache[hash_val].end(), sort_func);
         }
-        catch (const json::parse_error& e)
+        catch (const json::parse_error&)
         {
             // If an error occurs while parsing the JSON output, return without yielding any completion candidates.
             co_return;
