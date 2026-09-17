@@ -574,9 +574,15 @@ Vector<String> EditHelper::candidate_from_cache(const CandCacheMap& cache, uint6
 void EditHelper::cands_bashcomp(StringView lhs, const Vector<StringView>& tokens)
 {   // {{{
 
-    for (const String& c : this->bash_completer.complete(lhs))
+    // Construct bash-completion instance if it is not constructed yet.
+    if (not this->bash_completer.has_value())
+        this->bash_completer.emplace();
+
+    // Compute completion candidates from bash-completion.
+    for (const String& c : this->bash_completer->complete(lhs))
         this->cands.emplace_back(c, c);
 
+    // If no candidates found from bash-completion, then compute candidates from file path.
     if (this->cands.empty())
         this->cands_filepath(tokens);
 
