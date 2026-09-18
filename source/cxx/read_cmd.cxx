@@ -66,7 +66,6 @@ ReadCmdOut readcmd(StringView lhs_ini, StringView rhs_ini, const Deque<String>& 
     // Instantiate necessary classes.
     EditHelper  helper = EditHelper(cfg.area_height, term_size.cols, cfg);
     HistManager histmn = HistManager(hists);
-    TermUserIF  termui = TermUserIF(cfg.area_height, term_size.cols);
 
     // Instantiate a text editor based on the specified editor name.
     UniqPtr<TextEditor> editor = create_editor(editor_name, lhs_ini, rhs_ini, hists);
@@ -78,10 +77,18 @@ ReadCmdOut readcmd(StringView lhs_ini, StringView rhs_ini, const Deque<String>& 
     // Asynchronous completion is used only for interactive input mode.
     const bool use_async_comp = inputs.empty();
 
-    // Instantiate an asynchronous completion (used only for interactive input mode).
-    Optional<AsyncComp> opt_async_comp;
-    if (use_async_comp)
-        opt_async_comp.emplace(cfg.area_height, term_size.cols, cfg);
+    // Exactly one EditHelper exists in this function:
+    //   - use_async_comp == true : opt_async_comp owns it (accessed via complete_sync).
+    //   - use_async_comp == false: opt_edit_helper owns it.
+    Optional<EditHelper> opt_edit_helper;
+    Optional<AsyncComp>  opt_async_comp;
+    if (use_async_comp) { opt_async_comp.emplace(cfg.area_height, term_size.cols, cfg);  }
+    else                { opt_edit_helper.emplace(cfg.area_height, term_size.cols, cfg); }
+
+    // NOTE: TermUserIF is declared at the end intentionally, bacause the object destruction
+    // order is the reverse of the declaration, so the terminal is restored to canonical mode
+    // before any completion machinery is destroyed.
+    TermUserIF termui = TermUserIF(cfg.area_height, term_size.cols);
 
     while (true)
     {
@@ -96,7 +103,8 @@ ReadCmdOut readcmd(StringView lhs_ini, StringView rhs_ini, const Deque<String>& 
             opt_async_comp->launch_async_completion(lhs);
 
         // Get completion candidates.
-        Vector<String> clines = use_async_comp ? opt_async_comp->get_completion_result() : helper.candidate(lhs);
+        Vector<String> clines = use_async_comp ? opt_async_comp->get_completion_result()
+                                               : opt_edit_helper->candidate(lhs);
 
         // Get history completion.
         StringView hist_comp = histmn.complete(lhs);
@@ -150,8 +158,15 @@ ReadCmdOut readcmd(StringView lhs_ini, StringView rhs_ini, const Deque<String>& 
 
                 // Execute completion if Ctrl-I (= horizontal tab) is pressed.
                 case 0x09:
-                    helper.candidate(lhs);
-                    editor->set(helper.complete(lhs), rhs);
+                    if (use_async_comp)
+                    {
+                        editor->set(opt_async_comp->complete_sync(lhs), rhs);
+                    }
+                    else
+                    {
+                        opt_edit_helper->candidate(lhs);
+                        editor->set(opt_edit_helper->complete(lhs), rhs);
+                    }
                     break;
 
                 // Exit function if ENTER is pressed.

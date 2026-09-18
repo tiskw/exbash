@@ -60,6 +60,18 @@ AsyncComp::~AsyncComp(void)
 // AsyncComp: Member functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+String AsyncComp::complete_sync(StringView lhs)
+{   // {{{
+
+    // The call of candidate() and complete() is wrapped in a lock to ensure that they run
+    // as one atomic unit.
+    std::lock_guard<std::mutex> lock(this->mtx_helper);
+
+    this->helper.candidate(lhs);
+    return this->helper.complete(lhs);
+
+}   // }}}
+
 Vector<String> AsyncComp::get_completion_result(void)
 {   // {{{
 
@@ -143,8 +155,15 @@ void AsyncComp::worker_loop(void)
             gen_id_result = this->gen_id_task;
         }
 
-        // Perform completion outside the lock (allows new tasks to be posted while running).
-        Vector<String> computed = this->helper.candidate(lhs);
+        // Perform completion outside the lock to allow new tasks to be posted while running.
+        // However, the helper.candidate() is wrapped by another lock to ensure thread safety,
+        // since helper.complete() is called in other member function (complete_sync).
+        Vector<String> computed;
+        { std::lock_guard<std::mutex> lock(this->mtx_helper);
+
+            // Compute the completion candidates for the given left-hand-side string.
+            computed = this->helper.candidate(lhs);
+        }
 
         // Scoped locking pattern for accessing shared variables safely.
         { std::lock_guard<std::mutex> lock(this->mtx);
