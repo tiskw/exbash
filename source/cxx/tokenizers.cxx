@@ -29,8 +29,12 @@ namespace
 
         for (const Path& path_plugin : path_plugin_candidates)
         {
+            // Replace "{path_plugin}" in the token with the candidate path.
             String token_new = replace(token, "{path_plugin}", path_plugin.string());
-            if (stdfs::exists(token_new) and stdfs::is_regular_file(token_new))
+
+            // Check if the replaced token is a valid file path.
+            std::error_code ec1, ec2;
+            if (stdfs::exists(token_new, ec1) and (not ec1) and stdfs::is_regular_file(token_new, ec2) and (not ec2))
                 return token_new;
         }
 

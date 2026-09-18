@@ -26,6 +26,12 @@ inline constexpr char KEY_LEFT [3] = {0x1b, 0x5b, 0x44};  // ^[[D => [0x1b,0x5b,
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class TextEditor
+// Base class for text editor that manages user command editing.
+//
+// [Notes]
+//   The elements of the "hists" instance passed to the constructor of this class should NOT be
+//   deleted or modified while this class is active, because this class keeps only the reference
+//   of the queue instance.
 {
     public:
 

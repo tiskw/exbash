@@ -64,7 +64,6 @@ ReadCmdOut readcmd(StringView lhs_ini, StringView rhs_ini, const Deque<String>& 
     const Size term_size = get_terminal_size();
 
     // Instantiate necessary classes.
-    EditHelper  helper = EditHelper(cfg.area_height, term_size.cols, cfg);
     HistManager histmn = HistManager(hists);
 
     // Instantiate a text editor based on the specified editor name.

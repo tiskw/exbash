@@ -33,11 +33,11 @@ hline_color = "\u001B[38;2;112;120;128m"
 
 # Path to initial commands and bash info.
 # It is recommended to create them under "/tmp/exbash".
-path_cmnd_info = "/dev/shm/exbash/cmnd_info.txt"
-path_bash_info = "/dev/shm/exbash/bash_info.txt"
+path_cmnd_info = "/dev/shm/exbash-{uid}/cmnd_info.txt"
+path_bash_info = "/dev/shm/exbash-{uid}/bash_info.txt"
 
 # Output path of plugin commands.
-output_plugin = "/dev/shm/exbash/plugin.out"
+output_plugin = "/dev/shm/exbash-{uid}/plugin.out"
 
 ####################################################################################################
 # Prompt settings

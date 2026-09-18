@@ -50,9 +50,9 @@ static bool passed = true;
 // Utility macros and functions for testing
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define assert(expr) (assert_body((expr), #expr, __LINE__))
+#define expect(expr) (expect_body((expr), #expr, __LINE__))
 
-static void assert_body(bool expr_bool, const char* expr_str, int line_no)
+static void expect_body(bool expr_bool, const char* expr_str, int line_no)
 {   // {{{
 
     // Print test result.
@@ -115,7 +115,7 @@ static void test_BashCompleter(void)
             if (s == "status" || s == "status ") found_status = true;
             if (s == "stash"  || s == "stash " ) found_stash  = true;
         }
-        assert(found_status || found_stash);
+        expect(found_status || found_stash);
     }
 
     ////////////////////////////////////////////////////////
@@ -127,7 +127,7 @@ static void test_BashCompleter(void)
 
         // "git " (with trailing space) should return the full list of git subcommands.
         const Vector<String> results = bc.complete("git ");
-        assert(!results.empty());
+        expect(!results.empty());
     }
 
     ////////////////////////////////////////////////////////
@@ -154,7 +154,7 @@ static void test_BashCompleter(void)
         [[maybe_unused]] const Vector<String> r3 = bc.complete("echo ");
 
         // Each call must return a Vector (possibly empty) without crashing.
-        assert(true);
+        expect(true);
     }
 
     ////////////////////////////////////////////////////////
@@ -181,7 +181,7 @@ static void test_BashCompleter(void)
         bool found_option = false;
         for (const String& s : results)
             if (s.size() >= 2 && s[0] == '-' && s[1] == '-') { found_option = true; break; }
-        assert(found_option);
+        expect(found_option);
     }
 
 }   // }}}
@@ -204,7 +204,7 @@ static void test_AsyncComp(void)
         AsyncComp ac(8, 80, cfg);
 
         // The read end of the wakeup pipe must be a valid file descriptor.
-        assert(ac.get_wakeup_fd() >= 0);
+        expect(ac.get_wakeup_fd() >= 0);
 
         // When no task has been processed yet, get_completion_result returns the cached
         // (initially empty) result without blocking.
@@ -276,12 +276,12 @@ static void test_CharX(void)
 
     // Construct from a single ASCII byte and verify basic accessors.
     CharX cx_ascii("A", 1);
-    assert(cx_ascii.size() == 1);
-    assert(std::strcmp(cx_ascii.c_str(), "A") == 0);
-    assert(cx_ascii.view() == "A");
+    expect(cx_ascii.size() == 1);
+    expect(std::strcmp(cx_ascii.c_str(), "A") == 0);
+    expect(cx_ascii.view() == "A");
 
     // Printable representation of a normal ASCII character is itself.
-    assert(cx_ascii.printable() == "A");
+    expect(cx_ascii.printable() == "A");
 
     ////////////////////////////////////////////////////////
     // Multi-byte UTF-8 character
@@ -290,11 +290,11 @@ static void test_CharX(void)
     // "あ" is U+3042, encoded in 3 bytes: 0xE3 0x81 0x82.
     const char* hiragana_a = "あ";
     CharX cx_mb(hiragana_a, 3);
-    assert(cx_mb.size() == 3);
-    assert(cx_mb.view() == "あ");
+    expect(cx_mb.size() == 3);
+    expect(cx_mb.view() == "あ");
 
     // Multi-byte characters are printed as-is.
-    assert(cx_mb.printable() == "あ");
+    expect(cx_mb.printable() == "あ");
 
     ////////////////////////////////////////////////////////
     // Control character (caret notation)
@@ -302,12 +302,12 @@ static void test_CharX(void)
 
     // Ctrl-A (0x01) should be printed as "^A".
     CharX cx_ctrl("\x01", 1);
-    assert(cx_ctrl.size() == 1);
-    assert(cx_ctrl.printable() == "^A");
+    expect(cx_ctrl.size() == 1);
+    expect(cx_ctrl.printable() == "^A");
 
     // Ctrl-C (0x03) should be printed as "^C".
     CharX cx_ctrl_c("\x03", 1);
-    assert(cx_ctrl_c.printable() == "^C");
+    expect(cx_ctrl_c.printable() == "^C");
 
     ////////////////////////////////////////////////////////
     // DEL character (0x7F)
@@ -315,8 +315,8 @@ static void test_CharX(void)
 
     // DEL (0x7F) should be printed as "^?".
     CharX cx_del("\x7F", 1);
-    assert(cx_del.size() == 1);
-    assert(cx_del.printable() == "^?");
+    expect(cx_del.size() == 1);
+    expect(cx_del.printable() == "^?");
 
     ////////////////////////////////////////////////////////
     // Null / zero-size character
@@ -324,8 +324,8 @@ static void test_CharX(void)
 
     // A CharX with a null pointer or zero byte size should yield empty printable string.
     CharX cx_null(nullptr, 0);
-    assert(cx_null.size() == 0);
-    assert(cx_null.printable() == "");
+    expect(cx_null.size() == 0);
+    expect(cx_null.printable() == "");
 
 }   // }}}
 
@@ -342,7 +342,7 @@ static void test_CmdRunner(void)
     {
         // A simple echo command returns its argument as a stripped string.
         const String result = run_command("echo hello", RUN_COMMAND_GETOUT);
-        assert(result == "hello");
+        expect(result == "hello");
     }
 
     ////////////////////////////////////////////////////////
@@ -353,7 +353,7 @@ static void test_CmdRunner(void)
         // The Vector<String> overload passes each token as a separate argument.
         const Vector<String> cmd = {"echo", "world"};
         const String result = run_command(cmd, RUN_COMMAND_GETOUT);
-        assert(result == "world");
+        expect(result == "world");
     }
 
     ////////////////////////////////////////////////////////
@@ -364,7 +364,7 @@ static void test_CmdRunner(void)
         // The Vector<StringView> overload converts tokens to String before exec.
         const Vector<StringView> cmd = {"echo", "test"};
         const String result = run_command(cmd, RUN_COMMAND_GETOUT);
-        assert(result == "test");
+        expect(result == "test");
     }
 
     ////////////////////////////////////////////////////////
@@ -376,7 +376,7 @@ static void test_CmdRunner(void)
         const RunCommandOption opt =
             static_cast<RunCommandOption>(RUN_COMMAND_GETOUT | RUN_COMMAND_NO_STRIP);
         const String result = run_command("echo hello", opt);
-        assert(result == "hello\n");
+        expect(result == "hello\n");
     }
 
     ////////////////////////////////////////////////////////
@@ -386,7 +386,7 @@ static void test_CmdRunner(void)
     {
         // A plain run always returns an empty string.
         const String result = run_command("true", RUN_COMMAND_PLAIN);
-        assert(result == "");
+        expect(result == "");
     }
 
     ////////////////////////////////////////////////////////
@@ -440,12 +440,12 @@ static void test_GapBuffer(void)
     ////////////////////////////////////////////////////////
 
     GapBuffer gap_buffer("this is a ペン, ", "that is an りんご.");
-    assert(gap_buffer.count() == 29);
-    assert(gap_buffer.cursor() == 14);
-    assert(gap_buffer.lhs_view() == "this is a ペン, ");
-    assert(gap_buffer.rhs_view() == "that is an りんご.");
-    assert(gap_buffer.serialize() == "this is a ペン, that is an りんご.");
-    assert(gap_buffer.size() == 39);
+    expect(gap_buffer.count() == 29);
+    expect(gap_buffer.cursor() == 14);
+    expect(gap_buffer.lhs_view() == "this is a ペン, ");
+    expect(gap_buffer.rhs_view() == "that is an りんご.");
+    expect(gap_buffer.serialize() == "this is a ペン, that is an りんご.");
+    expect(gap_buffer.size() == 39);
 
     ////////////////////////////////////////////////////////
     // Move cursor
@@ -453,21 +453,21 @@ static void test_GapBuffer(void)
 
     gap_buffer.set("Here is Tokyo, ", "ここは東京。");
     gap_buffer.move_cursor(-3);
-    assert(gap_buffer.lhs_view() == "Here is Toky");
-    assert(gap_buffer.rhs_view() == "o, ここは東京。");
+    expect(gap_buffer.lhs_view() == "Here is Toky");
+    expect(gap_buffer.rhs_view() == "o, ここは東京。");
     gap_buffer.move_cursor(+6);
-    assert(gap_buffer.lhs_view() == "Here is Tokyo, ここは");
-    assert(gap_buffer.rhs_view() == "東京。");
+    expect(gap_buffer.lhs_view() == "Here is Tokyo, ここは");
+    expect(gap_buffer.rhs_view() == "東京。");
 
     gap_buffer.set("Here is Tokyo, ", "ここは東京。");
     gap_buffer.move_top();
     std::cout << gap_buffer.lhs_view() << "/" << gap_buffer.rhs_view() << std::endl;
-    assert(gap_buffer.lhs_view() == "");
-    assert(gap_buffer.rhs_view() == "Here is Tokyo, ここは東京。");
+    expect(gap_buffer.lhs_view() == "");
+    expect(gap_buffer.rhs_view() == "Here is Tokyo, ここは東京。");
     gap_buffer.move_end();
     std::cout << gap_buffer.lhs_view() << "/" << gap_buffer.rhs_view() << std::endl;
-    assert(gap_buffer.lhs_view() == "Here is Tokyo, ここは東京。");
-    assert(gap_buffer.rhs_view() == "");
+    expect(gap_buffer.lhs_view() == "Here is Tokyo, ここは東京。");
+    expect(gap_buffer.rhs_view() == "");
 
     ////////////////////////////////////////////////////////
     // Backspace and deletekey
@@ -476,29 +476,29 @@ static void test_GapBuffer(void)
     // Backspace.
     gap_buffer.set("aあbいcうdえeお", "<END>");
     gap_buffer.backspace(1);
-    assert(gap_buffer.serialize() == "aあbいcうdえe<END>");
+    expect(gap_buffer.serialize() == "aあbいcうdえe<END>");
     gap_buffer.backspace(2);
-    assert(gap_buffer.serialize() == "aあbいcうd<END>");
+    expect(gap_buffer.serialize() == "aあbいcうd<END>");
     gap_buffer.backspace(3);
-    assert(gap_buffer.serialize() == "aあbい<END>");
+    expect(gap_buffer.serialize() == "aあbい<END>");
     gap_buffer.backspace(4);
-    assert(gap_buffer.serialize() == "<END>");
+    expect(gap_buffer.serialize() == "<END>");
 
     // Deletekey.
     gap_buffer.set("<START>", "aあbいcうdえeお");
     gap_buffer.deletekey(2);
-    assert(gap_buffer.serialize() == "<START>bいcうdえeお");
+    expect(gap_buffer.serialize() == "<START>bいcうdえeお");
     gap_buffer.deletekey(3);
-    assert(gap_buffer.serialize() == "<START>うdえeお");
+    expect(gap_buffer.serialize() == "<START>うdえeお");
     gap_buffer.deletekey(4);
-    assert(gap_buffer.serialize() == "<START>お");
+    expect(gap_buffer.serialize() == "<START>お");
 
     // Large number (clamp at buffer size).
     gap_buffer.set("Here is Tokyo, ", "ここは東京。");
     gap_buffer.backspace(100);
     gap_buffer.deletekey(100);
-    assert(gap_buffer.lhs_view() == "");
-    assert(gap_buffer.rhs_view() == "");
+    expect(gap_buffer.lhs_view() == "");
+    expect(gap_buffer.rhs_view() == "");
 
     ////////////////////////////////////////////////////////
     // Insert
@@ -506,11 +506,11 @@ static void test_GapBuffer(void)
 
     gap_buffer.set("Here is Tokyo, ", "ここは東京。");
     gap_buffer.insert("comfortable city, ");
-    assert(gap_buffer.lhs_view() == "Here is Tokyo, comfortable city, ");
+    expect(gap_buffer.lhs_view() == "Here is Tokyo, comfortable city, ");
 
     gap_buffer.set("Here is Tokyo, ", "ここは東京。");
     gap_buffer.insert(String("comfortable city, "));
-    assert(gap_buffer.lhs_view() == "Here is Tokyo, comfortable city, ");
+    expect(gap_buffer.lhs_view() == "Here is Tokyo, comfortable city, ");
 
     ////////////////////////////////////////////////////////
     // Erase
@@ -518,18 +518,18 @@ static void test_GapBuffer(void)
 
     gap_buffer.set("Here is Tokyo, ", "ここは東京。");
     gap_buffer.erase_lhs();
-    assert(gap_buffer.lhs_view() == "");
+    expect(gap_buffer.lhs_view() == "");
 
     gap_buffer.set("Here is Tokyo, ", "ここは東京。");
     gap_buffer.erase_rhs();
-    assert(gap_buffer.rhs_view() == "");
+    expect(gap_buffer.rhs_view() == "");
 
     // Erase all characters.
     gap_buffer.set("Hello", "World");
     gap_buffer.erase();
-    assert(gap_buffer.lhs_view() == "");
-    assert(gap_buffer.rhs_view() == "");
-    assert(gap_buffer.count() == 0);
+    expect(gap_buffer.lhs_view() == "");
+    expect(gap_buffer.rhs_view() == "");
+    expect(gap_buffer.count() == 0);
 
     ////////////////////////////////////////////////////////
     // Ensure gap (capacity growth)
@@ -544,14 +544,14 @@ static void test_GapBuffer(void)
 
     // After inserting ASCII characters, count reflects the character count.
     gap_buffer.set("abc", "xyz");
-    assert(gap_buffer.count() == 6);
-    assert(gap_buffer.cursor() == 3);
+    expect(gap_buffer.count() == 6);
+    expect(gap_buffer.cursor() == 3);
 
     // Moving the cursor should update the cursor position.
     gap_buffer.move_cursor(-2);
-    assert(gap_buffer.cursor() == 1);
+    expect(gap_buffer.cursor() == 1);
     gap_buffer.move_cursor(+10);  // Clamps at end.
-    assert(gap_buffer.cursor() == 6);
+    expect(gap_buffer.cursor() == 6);
 
     ////////////////////////////////////////////////////////
     // Mixed ASCII and multibyte content
@@ -559,8 +559,8 @@ static void test_GapBuffer(void)
 
     // Verify that count reflects character count, not byte count.
     gap_buffer.set("日本語", "");
-    assert(gap_buffer.count() == 3);
-    assert(gap_buffer.size() == 9);  // 3 characters * 3 bytes each.
+    expect(gap_buffer.count() == 3);
+    expect(gap_buffer.size() == 9);  // 3 characters * 3 bytes each.
 
 }   // }}}
 
@@ -579,7 +579,7 @@ static void test_GenPathCache(void)
 
     // Generating the cache should succeed (PATH is expected to be set in the test environment).
     const int32_t ret = generate_path_commands_cache(cfg);
-    assert(ret == EXIT_SUCCESS);
+    expect(ret == EXIT_SUCCESS);
 
 }   // }}}
 
@@ -598,15 +598,15 @@ static void test_HistManager(void)
 
     // Prefix "git" matches the most recent entry starting with "git" ("git commit -m 'fix'").
     StringView result = hm.complete("git");
-    assert(result == " commit -m 'fix'");
+    expect(result == " commit -m 'fix'");
 
     // More specific prefix "git d" matches "git diff".
     result = hm.complete("git d");
-    assert(result == "iff");
+    expect(result == "iff");
 
     // Exact match returns the suffix (empty, since lhs is not included in result).
     result = hm.complete("ls -la");
-    assert(result == "");
+    expect(result == "");
 
     ////////////////////////////////////////////////////////
     // No matching history
@@ -614,7 +614,7 @@ static void test_HistManager(void)
 
     // A prefix that matches nothing should return an empty string.
     result = hm.complete("docker");
-    assert(result == "");
+    expect(result == "");
 
     ////////////////////////////////////////////////////////
     // Empty query
@@ -622,7 +622,7 @@ static void test_HistManager(void)
 
     // An empty prefix should return an empty string (no meaningful completion).
     result = hm.complete("");
-    assert(result == "");
+    expect(result == "");
 
     ////////////////////////////////////////////////////////
     // Empty history
@@ -631,7 +631,7 @@ static void test_HistManager(void)
     const Deque<String> empty_hists;
     HistManager hm_empty(empty_hists);
     result = hm_empty.complete("ls");
-    assert(result == "");
+    expect(result == "");
 
     ////////////////////////////////////////////////////////
     // Most recent match wins (reverse search)
@@ -642,7 +642,7 @@ static void test_HistManager(void)
 
     // "ls " matches the most recently added entry "ls /usr".
     result = hm2.complete("ls ");
-    assert(result == "/usr");
+    expect(result == "/usr");
 
 }   // }}}
 
@@ -659,20 +659,20 @@ static void test_MimeType(void)
     ////////////////////////////////////////////////////////
 
     // Common text/source file extensions.
-    assert(mime.get("file.txt")  != "");
-    assert(mime.get("file.html") != "");
-    assert(mime.get("file.py")   != "");
+    expect(mime.get("file.txt")  != "");
+    expect(mime.get("file.html") != "");
+    expect(mime.get("file.py")   != "");
 
     // Unknown/no extension falls back to text/plain.
-    assert(mime.get("Makefile") == "text/plain");
-    assert(mime.get("noextension") == "text/plain");
+    expect(mime.get("Makefile") == "text/plain");
+    expect(mime.get("noextension") == "text/plain");
 
     ////////////////////////////////////////////////////////
     // Directory
     ////////////////////////////////////////////////////////
 
     // Existing directory should be identified as inode/directory.
-    assert(mime.get(".") == "inode/directory");
+    expect(mime.get(".") == "inode/directory");
 
     ////////////////////////////////////////////////////////
     // Image / binary types
@@ -681,8 +681,8 @@ static void test_MimeType(void)
     // PNG and JPEG are well-known MIME types.
     const String png_mime  = mime.get("image.png");
     const String jpeg_mime = mime.get("photo.jpg");
-    assert(png_mime.find("image") != String::npos or png_mime == "text/plain");
-    assert(jpeg_mime.find("image") != String::npos or jpeg_mime == "text/plain");
+    expect(png_mime.find("image") != String::npos or png_mime == "text/plain");
+    expect(jpeg_mime.find("image") != String::npos or jpeg_mime == "text/plain");
 
 }   // }}}
 
@@ -693,17 +693,17 @@ static void test_PathX(void)
     print_header("Unit test for PathX class");
 
     // Test 1: parent path.
-    assert(PathX("~/workspace/Makefile").parent_path() == PathX("~/workspace"));
-    assert(PathX("~/workspace/Makefile").parent_path() != PathX("~/workspace/"));
-    assert(PathX("").parent_path() == PathX(""));
+    expect(PathX("~/workspace/Makefile").parent_path() == PathX("~/workspace"));
+    expect(PathX("~/workspace/Makefile").parent_path() != PathX("~/workspace/"));
+    expect(PathX("").parent_path() == PathX(""));
 
     // Test 2: split_to_target_and_query (no target).
     Vector<StringView> tokens1;
     tokens1.push_back("ls");
     tokens1.push_back(" ");
     auto [path1, name1] = split_to_target_and_query(tokens1);
-    assert(path1 == PathX(""));
-    assert(name1 == "");
+    expect(path1 == PathX(""));
+    expect(name1 == "");
 
     // Test 3: split_to_target_and_query (target is a file).
     Vector<StringView> tokens2;
@@ -711,8 +711,8 @@ static void test_PathX(void)
     tokens2.push_back(" ");
     tokens2.push_back("../develop/nishiki");
     auto [path2, name2] = split_to_target_and_query(tokens2);
-    assert(path2 == PathX("../develop"));
-    assert(name2 == "nishiki");
+    expect(path2 == PathX("../develop"));
+    expect(name2 == "nishiki");
 
     // Test 4: split_to_target_and_query (target is a directory).
     std::vector<StringView> tokens3;
@@ -720,12 +720,12 @@ static void test_PathX(void)
     tokens3.push_back(" ");
     tokens3.push_back("../develop/nishiki/");
     auto [path3, name3] = split_to_target_and_query(tokens3);
-    assert(path3 == PathX("../develop/nishiki"));
-    assert(name3 == "");
+    expect(path3 == PathX("../develop/nishiki"));
+    expect(name3 == "");
 
     // Test 5: listdir.
-    assert(PathX("/not_exists").listdir().size() == 0);
-    assert(PathX(".").listdir(1).size() == 1);
+    expect(PathX("/not_exists").listdir().size() == 0);
+    expect(PathX(".").listdir(1).size() == 1);
 
 }   // }}}
 
@@ -739,10 +739,10 @@ static void test_preview(void)
     StringMap previews;
 
     // Test 1: preview non-existing file returns empty result.
-    assert(preview("/unexisting_file", 100, previews).size() == 0);
+    expect(preview("/unexisting_file", 100, previews).size() == 0);
 
     // Test 2: preview of an existing text file returns non-empty result.
-    assert(preview("test_main.cxx", 100, previews).size() > 0);
+    expect(preview("test_main.cxx", 100, previews).size() > 0);
 
 }   // }}}
 
@@ -774,34 +774,34 @@ static void test_string_utils(void)
     ////////////////////////////////////////////////////////
 
     // ASCII string: each character has display width 1.
-    assert(width("") == 0);
-    assert(width("abc") == 3);
-    assert(width("Hello") == 5);
+    expect(width("") == 0);
+    expect(width("abc") == 3);
+    expect(width("Hello") == 5);
 
     // Japanese characters have display width 2 each.
-    assert(width("あ") == 2);
-    assert(width("日本語") == 6);
+    expect(width("あ") == 2);
+    expect(width("日本語") == 6);
 
     // Mixed ASCII and Japanese.
-    assert(width("aあ") == 3);
+    expect(width("aあ") == 3);
 
     ////////////////////////////////////////////////////////
     // textclip: clip string to given width
     ////////////////////////////////////////////////////////
 
     // Clipping an ASCII string.
-    assert(textclip("Hello", 3) == "Hel");
-    assert(textclip("Hello", 10) == "Hello");
+    expect(textclip("Hello", 3) == "Hel");
+    expect(textclip("Hello", 10) == "Hello");
 
     // Width of 0 means no clipping.
-    assert(textclip("Hello", 0) == "Hello");
+    expect(textclip("Hello", 0) == "Hello");
 
     // Clipping at a boundary that falls within a multibyte character.
     // "あい" has width 4; clipping to 3 should yield only "あ".
-    assert(textclip("あい", 3) == "あ");
+    expect(textclip("あい", 3) == "あ");
 
     // Clipping exactly at the end of a multibyte character.
-    assert(textclip("あい", 4) == "あい");
+    expect(textclip("あい", 4) == "あい");
 
     ////////////////////////////////////////////////////////
     // chunk: split string into width-based chunks
@@ -814,13 +814,13 @@ static void test_string_utils(void)
         {
             switch (count++)
             {
-                case 0: assert(sv == "He"); break;
-                case 1: assert(sv == "ll"); break;
-                case 2: assert(sv == "o");  break;
-                default: assert(false);
+                case 0: expect(sv == "He"); break;
+                case 1: expect(sv == "ll"); break;
+                case 2: expect(sv == "o");  break;
+                default: expect(false);
             }
         }
-        assert(count == 3);
+        expect(count == 3);
     }
 
     // Chunk of width 0 yields the full string as a single chunk.
@@ -828,10 +828,10 @@ static void test_string_utils(void)
         uint32_t count = 0;
         for (const StringView sv : chunk("Hello", 0))
         {
-            assert(sv == "Hello");
+            expect(sv == "Hello");
             ++count;
         }
-        assert(count == 1);
+        expect(count == 1);
     }
 
     // Chunk with multibyte characters: "日本語" has width 6; chunk at width 4 gives "日本" then "語".
@@ -841,12 +841,12 @@ static void test_string_utils(void)
         {
             switch (count++)
             {
-                case 0: assert(sv == "日本"); break;
-                case 1: assert(sv == "語");   break;
-                default: assert(false);
+                case 0: expect(sv == "日本"); break;
+                case 1: expect(sv == "語");   break;
+                default: expect(false);
             }
         }
-        assert(count == 2);
+        expect(count == 2);
     }
 
 }   // }}}
@@ -887,8 +887,8 @@ static void test_TermUserIF_pty(void)
             // Write 'A' to the master end; the PTY slave (our STDIN) immediately has data.
             write(master_fd, "A", 1);
             CharX cx = term.getch(-1);
-            assert(cx.size() == 1);
-            assert(cx.c_str()[0] == 'A');
+            expect(cx.size() == 1);
+            expect(cx.c_str()[0] == 'A');
         }
 
         ////////////////////////////////////////////////////////
@@ -901,8 +901,8 @@ static void test_TermUserIF_pty(void)
 
             write(master_fd, "\x1B[A", 3);  // cursor-up CSI sequence
             CharX cx = term.getch(-1);
-            assert(cx.size() == 3);
-            assert(cx.c_str()[0] == '\x1B');
+            expect(cx.size() == 3);
+            expect(cx.c_str()[0] == '\x1B');
         }
 
         ////////////////////////////////////////////////////////
@@ -916,8 +916,8 @@ static void test_TermUserIF_pty(void)
 
             write(master_fd, "\x1B[1", 3);  // CSI without a letter terminator
             CharX cx = term.getch(-1);
-            assert(cx.size() == 1);
-            assert(cx.c_str()[0] == '\x1B');
+            expect(cx.size() == 1);
+            expect(cx.c_str()[0] == '\x1B');
         }
 
         ////////////////////////////////////////////////////////
@@ -973,8 +973,8 @@ static void test_TermUserIF_pty(void)
             // Write to STDIN only; pipefd[0] (wakeup_fd) has no data.
             write(master_fd, "D", 1);
             CharX cx = term.getch(pipefd[0]);
-            assert(cx.size() == 1);
-            assert(cx.c_str()[0] == 'D');
+            expect(cx.size() == 1);
+            expect(cx.c_str()[0] == 'D');
             close(pipefd[0]);
             close(pipefd[1]);
         }
@@ -991,7 +991,7 @@ static void test_TermUserIF_pty(void)
             // Write to the wakeup pipe only; STDIN has no data.
             write(pipefd[1], "w", 1);
             CharX cx = term.getch(pipefd[0]);
-            assert(cx.size() == 0);  // empty CharX signals re-render
+            expect(cx.size() == 0);  // empty CharX signals re-render
             close(pipefd[0]);
             close(pipefd[1]);
         }
@@ -1003,7 +1003,7 @@ static void test_TermUserIF_pty(void)
         {
             TermUserIF term(8, 80);
             const Vector<String> wrong = {"only one line"};
-            assert(term.update_lines(wrong) == false);
+            expect(term.update_lines(wrong) == false);
         }
     }
     catch (const std::exception& e)
@@ -1036,8 +1036,8 @@ static void test_TextEditorEmacs(void)
         // ASCII characters are inserted at the cursor position.
         TextEditorEmacs e("", "", {});
         e.edit("h"); e.edit("i");
-        assert(e.get_lhs() == "hi");
-        assert(e.get_rhs() == "");
+        expect(e.get_lhs() == "hi");
+        expect(e.get_rhs() == "");
     }
 
     ////////////////////////////////////////////////////////
@@ -1048,16 +1048,16 @@ static void test_TextEditorEmacs(void)
         // C-a moves the cursor to the beginning of the line.
         TextEditorEmacs e("hello", "", {});
         e.edit("\x01");
-        assert(e.get_lhs() == "");
-        assert(e.get_rhs() == "hello");
+        expect(e.get_lhs() == "");
+        expect(e.get_rhs() == "hello");
     }
 
     {
         // C-e moves the cursor to the end of the line.
         TextEditorEmacs e("", "hello", {});
         e.edit("\x05");
-        assert(e.get_lhs() == "hello");
-        assert(e.get_rhs() == "");
+        expect(e.get_lhs() == "hello");
+        expect(e.get_rhs() == "");
     }
 
     ////////////////////////////////////////////////////////
@@ -1068,16 +1068,16 @@ static void test_TextEditorEmacs(void)
         // C-b moves one character backward.
         TextEditorEmacs e("abc", "", {});
         e.edit("\x02");
-        assert(e.get_lhs() == "ab");
-        assert(e.get_rhs() == "c");
+        expect(e.get_lhs() == "ab");
+        expect(e.get_rhs() == "c");
     }
 
     {
         // C-f moves one character forward.
         TextEditorEmacs e("", "abc", {});
         e.edit("\x06");
-        assert(e.get_lhs() == "a");
-        assert(e.get_rhs() == "bc");
+        expect(e.get_lhs() == "a");
+        expect(e.get_rhs() == "bc");
     }
 
     ////////////////////////////////////////////////////////
@@ -1088,22 +1088,22 @@ static void test_TextEditorEmacs(void)
         // C-d deletes the character under the cursor.
         TextEditorEmacs e("", "hello", {});
         e.edit("\x04");
-        assert(e.get_lhs() == "");
-        assert(e.get_rhs() == "ello");
+        expect(e.get_lhs() == "");
+        expect(e.get_rhs() == "ello");
     }
 
     {
         // C-h (Backspace) deletes one character backward.
         TextEditorEmacs e("abc", "", {});
         e.edit("\x08");
-        assert(e.get_lhs() == "ab");
+        expect(e.get_lhs() == "ab");
     }
 
     {
         // DEL (0x7F) also deletes one character backward.
         TextEditorEmacs e("abc", "", {});
         e.edit("\x7F");
-        assert(e.get_lhs() == "ab");
+        expect(e.get_lhs() == "ab");
     }
 
     ////////////////////////////////////////////////////////
@@ -1114,16 +1114,16 @@ static void test_TextEditorEmacs(void)
         // C-k kills from the cursor to the end of the line.
         TextEditorEmacs e("ls ", "/tmp", {});
         e.edit("\x0B");
-        assert(e.get_lhs() == "ls ");
-        assert(e.get_rhs() == "");
+        expect(e.get_lhs() == "ls ");
+        expect(e.get_rhs() == "");
     }
 
     {
         // C-u kills from the beginning of the line to the cursor.
         TextEditorEmacs e("ls /tmp", "", {});
         e.edit("\x15");
-        assert(e.get_lhs() == "");
-        assert(e.get_rhs() == "");
+        expect(e.get_lhs() == "");
+        expect(e.get_rhs() == "");
     }
 
     {
@@ -1131,7 +1131,7 @@ static void test_TextEditorEmacs(void)
         TextEditorEmacs e("hello world", "", {});
         e.edit("\x15");  // C-u: kill everything → kill_ring = "hello world"
         e.edit("\x19");  // C-y: paste
-        assert(e.get_lhs() == "hello world");
+        expect(e.get_lhs() == "hello world");
     }
 
     ////////////////////////////////////////////////////////
@@ -1142,8 +1142,8 @@ static void test_TextEditorEmacs(void)
         // C-w kills the word immediately before the cursor, including the preceding space.
         TextEditorEmacs e("ls /tmp", "", {});
         e.edit("\x17");
-        assert(e.get_lhs() == "ls");
-        assert(e.get_rhs() == "");
+        expect(e.get_lhs() == "ls");
+        expect(e.get_rhs() == "");
     }
 
     ////////////////////////////////////////////////////////
@@ -1154,16 +1154,16 @@ static void test_TextEditorEmacs(void)
         // C-t swaps the character before the cursor with the one at the cursor.
         TextEditorEmacs e("ab", "c", {});
         e.edit("\x14");
-        assert(e.get_lhs() == "acb");
-        assert(e.get_rhs() == "");
+        expect(e.get_lhs() == "acb");
+        expect(e.get_rhs() == "");
     }
 
     {
         // At end of line C-t swaps the last two characters.
         TextEditorEmacs e("ab", "", {});
         e.edit("\x14");
-        assert(e.get_lhs() == "ba");
-        assert(e.get_rhs() == "");
+        expect(e.get_lhs() == "ba");
+        expect(e.get_rhs() == "");
     }
 
     ////////////////////////////////////////////////////////
@@ -1174,11 +1174,11 @@ static void test_TextEditorEmacs(void)
         Deque<String> hists = {"cmd1", "cmd2"};
         TextEditorEmacs e("", "", hists);
         e.edit("\x10");  // C-p: switch to most-recent history entry "cmd2".
-        assert(e.get_lhs() == "cmd2");
+        expect(e.get_lhs() == "cmd2");
         e.edit("\x10");  // C-p: switch to older entry "cmd1".
-        assert(e.get_lhs() == "cmd1");
+        expect(e.get_lhs() == "cmd1");
         e.edit("\x0E");  // C-n: switch back toward current buffer ("cmd2").
-        assert(e.get_lhs() == "cmd2");
+        expect(e.get_lhs() == "cmd2");
     }
 
     ////////////////////////////////////////////////////////
@@ -1191,21 +1191,21 @@ static void test_TextEditorEmacs(void)
 
         // Up arrow navigates to the previous history entry.
         e.edit(StringView("\x1B[A", 3));
-        assert(e.get_lhs() == "old");
+        expect(e.get_lhs() == "old");
 
         // Down arrow returns to the current editing buffer.
         e.edit(StringView("\x1B[B", 3));
-        assert(e.get_lhs() == "abc");
+        expect(e.get_lhs() == "abc");
 
         // Left arrow moves the cursor one character backward.
         e.edit(StringView("\x1B[D", 3));
-        assert(e.get_lhs() == "ab");
-        assert(e.get_rhs() == "c");
+        expect(e.get_lhs() == "ab");
+        expect(e.get_rhs() == "c");
 
         // Right arrow moves the cursor one character forward.
         e.edit(StringView("\x1B[C", 3));
-        assert(e.get_lhs() == "abc");
-        assert(e.get_rhs() == "");
+        expect(e.get_lhs() == "abc");
+        expect(e.get_rhs() == "");
     }
 
     ////////////////////////////////////////////////////////
@@ -1217,8 +1217,8 @@ static void test_TextEditorEmacs(void)
         TextEditorEmacs e("", "hello world", {});
         e.edit("\x1B");  // ESC: arm the meta prefix
         e.edit("f");     // M-f: advance past "hello"
-        assert(e.get_lhs() == "hello");
-        assert(e.get_rhs() == " world");
+        expect(e.get_lhs() == "hello");
+        expect(e.get_rhs() == " world");
     }
 
     {
@@ -1226,8 +1226,8 @@ static void test_TextEditorEmacs(void)
         TextEditorEmacs e("hello world", "", {});
         e.edit("\x1B");
         e.edit("b");     // M-b: retreat past "world"
-        assert(e.get_lhs() == "hello ");
-        assert(e.get_rhs() == "world");
+        expect(e.get_lhs() == "hello ");
+        expect(e.get_rhs() == "world");
     }
 
     ////////////////////////////////////////////////////////
@@ -1239,8 +1239,8 @@ static void test_TextEditorEmacs(void)
         TextEditorEmacs e("", "hello world", {});
         e.edit("\x1B");
         e.edit("d");     // M-d: kill "hello"
-        assert(e.get_lhs() == "");
-        assert(e.get_rhs() == " world");
+        expect(e.get_lhs() == "");
+        expect(e.get_rhs() == " world");
     }
 
     {
@@ -1248,8 +1248,8 @@ static void test_TextEditorEmacs(void)
         TextEditorEmacs e("hello world", "", {});
         e.edit("\x1B");
         e.edit("\x7F");  // M-DEL: kill "world"
-        assert(e.get_lhs() == "hello ");
-        assert(e.get_rhs() == "");
+        expect(e.get_lhs() == "hello ");
+        expect(e.get_rhs() == "");
     }
 
     ////////////////////////////////////////////////////////
@@ -1261,7 +1261,7 @@ static void test_TextEditorEmacs(void)
         TextEditorEmacs eu("", "hello", {});
         eu.edit("\x1B");
         eu.edit("u");
-        assert(eu.get_lhs() == "HELLO");
+        expect(eu.get_lhs() == "HELLO");
     }
 
     {
@@ -1269,7 +1269,7 @@ static void test_TextEditorEmacs(void)
         TextEditorEmacs el("", "HELLO", {});
         el.edit("\x1B");
         el.edit("l");
-        assert(el.get_lhs() == "hello");
+        expect(el.get_lhs() == "hello");
     }
 
     {
@@ -1277,7 +1277,7 @@ static void test_TextEditorEmacs(void)
         TextEditorEmacs ec("", "hello", {});
         ec.edit("\x1B");
         ec.edit("c");
-        assert(ec.get_lhs() == "Hello");
+        expect(ec.get_lhs() == "Hello");
     }
 
     ////////////////////////////////////////////////////////
@@ -1289,7 +1289,7 @@ static void test_TextEditorEmacs(void)
         TextEditorEmacs e("hi", "", {});
         e.edit("\x1B");
         e.edit("\x1B");
-        assert(e.get_lhs() == "hi");
+        expect(e.get_lhs() == "hi");
     }
 
     {
@@ -1297,7 +1297,7 @@ static void test_TextEditorEmacs(void)
         TextEditorEmacs e("", "", {});
         e.edit("\x1B");
         e.edit("z");  // M-z is unrecognized; 'z' is inserted.
-        assert(e.get_lhs() == "z");
+        expect(e.get_lhs() == "z");
     }
 
     ////////////////////////////////////////////////////////
@@ -1308,7 +1308,7 @@ static void test_TextEditorEmacs(void)
         // C-c is not handled by the editor and must not modify the buffer.
         TextEditorEmacs e("", "", {});
         e.edit("\x03");
-        assert(e.get_lhs() == "");
+        expect(e.get_lhs() == "");
     }
 
 }   // }}}
@@ -1326,28 +1326,28 @@ static void test_TextEditorVi(void)
     {
         // The editor starts in INSERT mode.
         TextEditorVi v("", "", {});
-        assert(v.get_mode() == TextEditor::Mode::INSERT);
+        expect(v.get_mode() == TextEditor::Mode::INSERT);
         v.edit("ab");
-        assert(v.get_lhs() == "ab");
+        expect(v.get_lhs() == "ab");
     }
 
     {
         // ^H (0x08) and DEL (0x7F) both delete one character backward in INSERT mode.
         TextEditorVi v("abc", "", {});
         v.edit("\x08");  // ^H: backspace
-        assert(v.get_lhs() == "ab");
+        expect(v.get_lhs() == "ab");
         v.edit("\x7F");  // DEL: backspace
-        assert(v.get_lhs() == "a");
+        expect(v.get_lhs() == "a");
     }
 
     {
         // Arrow keys in INSERT mode move the cursor.
         TextEditorVi v("abc", "", {});
         v.edit(StringView("\x1B[D", 3));  // Left arrow: one char backward.
-        assert(v.get_lhs() == "ab");
-        assert(v.get_rhs() == "c");
+        expect(v.get_lhs() == "ab");
+        expect(v.get_rhs() == "c");
         v.edit(StringView("\x1B[C", 3));  // Right arrow: one char forward.
-        assert(v.get_lhs() == "abc");
+        expect(v.get_lhs() == "abc");
     }
 
     ////////////////////////////////////////////////////////
@@ -1357,7 +1357,7 @@ static void test_TextEditorVi(void)
     {
         TextEditorVi v("ls ", "", {});
         v.edit("\x1B");
-        assert(v.get_mode() == TextEditor::Mode::NORMAL);
+        expect(v.get_mode() == TextEditor::Mode::NORMAL);
     }
 
     ////////////////////////////////////////////////////////
@@ -1368,22 +1368,22 @@ static void test_TextEditorVi(void)
         TextEditorVi v("abc", "", {});
         v.edit("\x1B");   // → NORMAL
         v.edit("h");      // h: move one char left
-        assert(v.get_lhs() == "ab");
-        assert(v.get_rhs() == "c");
+        expect(v.get_lhs() == "ab");
+        expect(v.get_rhs() == "c");
         v.edit("l");      // l: move one char right
-        assert(v.get_lhs() == "abc");
-        assert(v.get_rhs() == "");
+        expect(v.get_lhs() == "abc");
+        expect(v.get_rhs() == "");
     }
 
     {
         TextEditorVi v("abc", "", {});
         v.edit("\x1B");   // → NORMAL
         v.edit("0");      // 0: move to beginning of line
-        assert(v.get_lhs() == "");
-        assert(v.get_rhs() == "abc");
+        expect(v.get_lhs() == "");
+        expect(v.get_rhs() == "abc");
         v.edit("$");      // $: move to end of line
-        assert(v.get_lhs() == "abc");
-        assert(v.get_rhs() == "");
+        expect(v.get_lhs() == "abc");
+        expect(v.get_rhs() == "");
     }
 
     ////////////////////////////////////////////////////////
@@ -1394,8 +1394,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("  hello", "", {});
         v.edit("\x1B");   // → NORMAL
         v.edit("^");      // ^: move to first non-blank character
-        assert(v.get_lhs() == "  ");
-        assert(v.get_rhs() == "hello");
+        expect(v.get_lhs() == "  ");
+        expect(v.get_rhs() == "hello");
     }
 
     ////////////////////////////////////////////////////////
@@ -1407,8 +1407,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "abc", {});
         v.edit("\x1B");
         v.edit("x");
-        assert(v.get_lhs() == "");
-        assert(v.get_rhs() == "bc");
+        expect(v.get_lhs() == "");
+        expect(v.get_rhs() == "bc");
     }
 
     {
@@ -1416,7 +1416,7 @@ static void test_TextEditorVi(void)
         TextEditorVi v("abc", "", {});
         v.edit("\x1B");
         v.edit("X");
-        assert(v.get_lhs() == "ab");
+        expect(v.get_lhs() == "ab");
     }
 
     {
@@ -1424,8 +1424,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("ab", "cd", {});
         v.edit("\x1B");
         v.edit("D");
-        assert(v.get_lhs() == "ab");
-        assert(v.get_rhs() == "");
+        expect(v.get_lhs() == "ab");
+        expect(v.get_rhs() == "");
     }
 
     ////////////////////////////////////////////////////////
@@ -1437,9 +1437,9 @@ static void test_TextEditorVi(void)
         TextEditorVi v("hello", "", {});
         v.edit("\x1B");
         v.edit("S");
-        assert(v.get_lhs() == "");
-        assert(v.get_rhs() == "");
-        assert(v.get_mode() == TextEditor::Mode::INSERT);
+        expect(v.get_lhs() == "");
+        expect(v.get_rhs() == "");
+        expect(v.get_mode() == TextEditor::Mode::INSERT);
     }
 
     {
@@ -1447,8 +1447,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "abc", {});
         v.edit("\x1B");
         v.edit("s");
-        assert(v.get_rhs() == "bc");
-        assert(v.get_mode() == TextEditor::Mode::INSERT);
+        expect(v.get_rhs() == "bc");
+        expect(v.get_mode() == TextEditor::Mode::INSERT);
     }
 
     {
@@ -1456,9 +1456,9 @@ static void test_TextEditorVi(void)
         TextEditorVi v("ab", "cd", {});
         v.edit("\x1B");
         v.edit("C");
-        assert(v.get_lhs() == "ab");
-        assert(v.get_rhs() == "");
-        assert(v.get_mode() == TextEditor::Mode::INSERT);
+        expect(v.get_lhs() == "ab");
+        expect(v.get_rhs() == "");
+        expect(v.get_mode() == TextEditor::Mode::INSERT);
     }
 
     ////////////////////////////////////////////////////////
@@ -1471,10 +1471,10 @@ static void test_TextEditorVi(void)
         v.edit("\x1B");
         v.edit("h");    // move to 'ab|c'
         v.edit("i");    // INSERT before 'c'
-        assert(v.get_mode() == TextEditor::Mode::INSERT);
+        expect(v.get_mode() == TextEditor::Mode::INSERT);
         v.edit("X");    // insert 'X'
-        assert(v.get_lhs() == "abX");
-        assert(v.get_rhs() == "c");
+        expect(v.get_lhs() == "abX");
+        expect(v.get_rhs() == "c");
     }
 
     {
@@ -1482,9 +1482,9 @@ static void test_TextEditorVi(void)
         TextEditorVi v("abc", "", {});
         v.edit("\x1B");
         v.edit("I");
-        assert(v.get_mode() == TextEditor::Mode::INSERT);
-        assert(v.get_lhs() == "");
-        assert(v.get_rhs() == "abc");
+        expect(v.get_mode() == TextEditor::Mode::INSERT);
+        expect(v.get_lhs() == "");
+        expect(v.get_rhs() == "abc");
     }
 
     {
@@ -1492,8 +1492,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "abc", {});
         v.edit("\x1B");
         v.edit("a");    // append: cursor moves one char right
-        assert(v.get_mode() == TextEditor::Mode::INSERT);
-        assert(v.get_lhs() == "a");
+        expect(v.get_mode() == TextEditor::Mode::INSERT);
+        expect(v.get_lhs() == "a");
     }
 
     {
@@ -1501,9 +1501,9 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "abc", {});
         v.edit("\x1B");
         v.edit("A");
-        assert(v.get_mode() == TextEditor::Mode::INSERT);
-        assert(v.get_lhs() == "abc");
-        assert(v.get_rhs() == "");
+        expect(v.get_mode() == TextEditor::Mode::INSERT);
+        expect(v.get_lhs() == "abc");
+        expect(v.get_rhs() == "");
     }
 
     ////////////////////////////////////////////////////////
@@ -1515,8 +1515,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "hello world", {});
         v.edit("\x1B");
         v.edit("w");
-        assert(v.get_lhs() == "hello ");
-        assert(v.get_rhs() == "world");
+        expect(v.get_lhs() == "hello ");
+        expect(v.get_rhs() == "world");
     }
 
     {
@@ -1524,8 +1524,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("hello world", "", {});
         v.edit("\x1B");
         v.edit("b");
-        assert(v.get_lhs() == "hello ");
-        assert(v.get_rhs() == "world");
+        expect(v.get_lhs() == "hello ");
+        expect(v.get_rhs() == "world");
     }
 
     {
@@ -1533,8 +1533,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "hello world", {});
         v.edit("\x1B");
         v.edit("e");    // cursor lands on 'o' (last char of "hello")
-        assert(v.get_lhs() == "hell");
-        assert(String(v.get_rhs()).starts_with("o"));
+        expect(v.get_lhs() == "hell");
+        expect(String(v.get_rhs()).starts_with("o"));
     }
 
     {
@@ -1542,8 +1542,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "hello.world foo", {});
         v.edit("\x1B");
         v.edit("W");
-        assert(v.get_lhs() == "hello.world ");
-        assert(v.get_rhs() == "foo");
+        expect(v.get_lhs() == "hello.world ");
+        expect(v.get_rhs() == "foo");
     }
 
     ////////////////////////////////////////////////////////
@@ -1555,11 +1555,11 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "", hists);
         v.edit("\x1B");   // → NORMAL
         v.edit("k");      // k: go to most-recent history entry "cmd2"
-        assert(v.get_lhs() == "cmd2");
+        expect(v.get_lhs() == "cmd2");
         v.edit("k");      // k: go to older entry "cmd1"
-        assert(v.get_lhs() == "cmd1");
+        expect(v.get_lhs() == "cmd1");
         v.edit("j");      // j: advance toward current buffer ("cmd2")
-        assert(v.get_lhs() == "cmd2");
+        expect(v.get_lhs() == "cmd2");
     }
 
     ////////////////////////////////////////////////////////
@@ -1571,8 +1571,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "hello", {});
         v.edit("\x1B");
         v.edit("~");   // 'h' → 'H'
-        assert(v.get_lhs() == "H");
-        assert(String(v.get_rhs()).starts_with("e"));
+        expect(v.get_lhs() == "H");
+        expect(String(v.get_rhs()).starts_with("e"));
     }
 
     ////////////////////////////////////////////////////////
@@ -1585,8 +1585,8 @@ static void test_TextEditorVi(void)
         v.edit("\x1B");
         v.edit("d");
         v.edit("d");
-        assert(v.get_lhs() == "");
-        assert(v.get_rhs() == "");
+        expect(v.get_lhs() == "");
+        expect(v.get_rhs() == "");
     }
 
     {
@@ -1595,8 +1595,8 @@ static void test_TextEditorVi(void)
         v.edit("\x1B");
         v.edit("d");
         v.edit("w");
-        assert(v.get_lhs() == "");
-        assert(v.get_rhs() == "world");
+        expect(v.get_lhs() == "");
+        expect(v.get_rhs() == "world");
     }
 
     {
@@ -1605,8 +1605,8 @@ static void test_TextEditorVi(void)
         v.edit("\x1B");
         v.edit("y");
         v.edit("y");
-        assert(v.get_lhs() == "hello ");
-        assert(v.get_rhs() == "world");
+        expect(v.get_lhs() == "hello ");
+        expect(v.get_rhs() == "world");
     }
 
     {
@@ -1615,9 +1615,9 @@ static void test_TextEditorVi(void)
         v.edit("\x1B");
         v.edit("c");
         v.edit("c");
-        assert(v.get_lhs() == "");
-        assert(v.get_rhs() == "");
-        assert(v.get_mode() == TextEditor::Mode::INSERT);
+        expect(v.get_lhs() == "");
+        expect(v.get_rhs() == "");
+        expect(v.get_mode() == TextEditor::Mode::INSERT);
     }
 
     ////////////////////////////////////////////////////////
@@ -1630,7 +1630,7 @@ static void test_TextEditorVi(void)
         v.edit("\x1B");
         v.edit("r");   // arm the replace operator
         v.edit("X");   // replace 'a' with 'X'; cursor stays on 'X'
-        assert(v.get_rhs() == "Xbc");
+        expect(v.get_rhs() == "Xbc");
     }
 
     {
@@ -1640,7 +1640,7 @@ static void test_TextEditorVi(void)
         v.edit("y"); v.edit("y");  // yy: yank "xyz"
         v.edit("d"); v.edit("d");  // dd: delete whole line (buffer now empty)
         v.edit("p");               // paste yank buffer after cursor
-        assert(v.get_lhs() == "xyz");
+        expect(v.get_lhs() == "xyz");
     }
 
     {
@@ -1650,7 +1650,7 @@ static void test_TextEditorVi(void)
         v.edit("y"); v.edit("y");  // yy: yank "xyz"
         v.edit("d"); v.edit("d");  // dd: delete whole line
         v.edit("P");               // paste before cursor
-        assert(v.get_lhs() == "xyz");
+        expect(v.get_lhs() == "xyz");
     }
 
     ////////////////////////////////////////////////////////
@@ -1663,7 +1663,7 @@ static void test_TextEditorVi(void)
         v.edit("d");       // pending_op = 'd'
         v.edit("\x1B");    // ESC: cancel the pending operator
         v.edit("x");       // x should delete 'a', not apply 'd'
-        assert(v.get_rhs() == "bc");
+        expect(v.get_rhs() == "bc");
     }
 
     ////////////////////////////////////////////////////////
@@ -1674,8 +1674,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("abc", "", {});
         v.edit("\x1B");                   // → NORMAL
         v.edit(StringView("\x1B[D", 3));  // Left arrow: move one char left.
-        assert(v.get_lhs() == "ab");
-        assert(v.get_rhs() == "c");
+        expect(v.get_lhs() == "ab");
+        expect(v.get_rhs() == "c");
     }
 
     ////////////////////////////////////////////////////////
@@ -1686,21 +1686,21 @@ static void test_TextEditorVi(void)
         // Ctrl-A (0x01) in INSERT mode is rendered as "^A".
         TextEditorVi v("", "", {});
         v.edit("\x01");
-        assert(v.get_lhs() == "^A");
+        expect(v.get_lhs() == "^A");
     }
 
     {
         // Ctrl-C (0x03) in INSERT mode is rendered as "^C".
         TextEditorVi v("", "", {});
         v.edit("\x03");
-        assert(v.get_lhs() == "^C");
+        expect(v.get_lhs() == "^C");
     }
 
     {
         // Ctrl-Z (0x1A) in INSERT mode is rendered as "^Z".
         TextEditorVi v("", "", {});
         v.edit("\x1A");
-        assert(v.get_lhs() == "^Z");
+        expect(v.get_lhs() == "^Z");
     }
 
     ////////////////////////////////////////////////////////
@@ -1713,11 +1713,11 @@ static void test_TextEditorVi(void)
 
         // Up arrow in INSERT mode navigates to most-recent history entry "cmd2".
         v.edit(StringView("\x1B[A", 3));
-        assert(v.get_lhs() == "cmd2");
+        expect(v.get_lhs() == "cmd2");
 
         // Down arrow in INSERT mode returns to the editing buffer.
         v.edit(StringView("\x1B[B", 3));
-        assert(v.get_lhs() == "");
+        expect(v.get_lhs() == "");
     }
 
     ////////////////////////////////////////////////////////
@@ -1729,8 +1729,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("hello.world", "", {});
         v.edit("\x1B");
         v.edit("B");
-        assert(v.get_lhs() == "");
-        assert(v.get_rhs() == "hello.world");
+        expect(v.get_lhs() == "");
+        expect(v.get_rhs() == "hello.world");
     }
 
     {
@@ -1738,8 +1738,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("foo bar ", "", {});
         v.edit("\x1B");
         v.edit("B");
-        assert(v.get_lhs() == "foo ");
-        assert(v.get_rhs() == "bar ");
+        expect(v.get_lhs() == "foo ");
+        expect(v.get_rhs() == "bar ");
     }
 
     {
@@ -1748,8 +1748,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "foo.bar baz", {});
         v.edit("\x1B");
         v.edit("E");
-        assert(v.get_lhs() == "foo.ba");
-        assert(String(v.get_rhs()).starts_with("r"));
+        expect(v.get_lhs() == "foo.ba");
+        expect(String(v.get_rhs()).starts_with("r"));
     }
 
     ////////////////////////////////////////////////////////
@@ -1761,8 +1761,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "abc", {});
         v.edit("\x1B");
         v.edit(StringView("\x1B[C", 3));
-        assert(v.get_lhs() == "a");
-        assert(v.get_rhs() == "bc");
+        expect(v.get_lhs() == "a");
+        expect(v.get_rhs() == "bc");
     }
 
     {
@@ -1771,9 +1771,9 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "", hists);
         v.edit("\x1B");
         v.edit(StringView("\x1B[A", 3));  // Up arrow → "cmd2"
-        assert(v.get_lhs() == "cmd2");
+        expect(v.get_lhs() == "cmd2");
         v.edit(StringView("\x1B[B", 3));  // Down arrow → back to editing buffer
-        assert(v.get_lhs() == "");
+        expect(v.get_lhs() == "");
     }
 
     ////////////////////////////////////////////////////////
@@ -1785,8 +1785,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "abc", {});
         v.edit("\x1B");
         v.edit(StringView("xy", 2));
-        assert(v.get_lhs() == "");
-        assert(v.get_rhs() == "abc");
+        expect(v.get_lhs() == "");
+        expect(v.get_rhs() == "abc");
     }
 
     ////////////////////////////////////////////////////////
@@ -1798,8 +1798,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "Hello", {});
         v.edit("\x1B");
         v.edit("~");
-        assert(v.get_lhs() == "h");   // 'H' → 'h', cursor moved past it
-        assert(String(v.get_rhs()).starts_with("e"));
+        expect(v.get_lhs() == "h");   // 'H' → 'h', cursor moved past it
+        expect(String(v.get_rhs()).starts_with("e"));
     }
 
     {
@@ -1807,8 +1807,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "1abc", {});
         v.edit("\x1B");
         v.edit("~");
-        assert(v.get_lhs() == "1");
-        assert(v.get_rhs() == "abc");
+        expect(v.get_lhs() == "1");
+        expect(v.get_rhs() == "abc");
     }
 
     {
@@ -1816,8 +1816,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("abc", "", {});
         v.edit("\x1B");
         v.edit("~");
-        assert(v.get_lhs() == "abc");
-        assert(v.get_rhs() == "");
+        expect(v.get_lhs() == "abc");
+        expect(v.get_rhs() == "");
     }
 
     ////////////////////////////////////////////////////////
@@ -1829,8 +1829,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("ab", "cd", {});
         v.edit("\x1B");
         v.edit("d"); v.edit("$");
-        assert(v.get_lhs() == "ab");
-        assert(v.get_rhs() == "");
+        expect(v.get_lhs() == "ab");
+        expect(v.get_rhs() == "");
     }
 
     {
@@ -1838,8 +1838,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("ab", "cd", {});
         v.edit("\x1B");
         v.edit("d"); v.edit("0");
-        assert(v.get_lhs() == "");
-        assert(v.get_rhs() == "cd");
+        expect(v.get_lhs() == "");
+        expect(v.get_rhs() == "cd");
     }
 
     {
@@ -1847,9 +1847,9 @@ static void test_TextEditorVi(void)
         TextEditorVi v("ab", "cd", {});
         v.edit("\x1B");
         v.edit("c"); v.edit("$");
-        assert(v.get_lhs() == "ab");
-        assert(v.get_rhs() == "");
-        assert(v.get_mode() == TextEditor::Mode::INSERT);
+        expect(v.get_lhs() == "ab");
+        expect(v.get_rhs() == "");
+        expect(v.get_mode() == TextEditor::Mode::INSERT);
     }
 
     {
@@ -1857,9 +1857,9 @@ static void test_TextEditorVi(void)
         TextEditorVi v("ab", "cd", {});
         v.edit("\x1B");
         v.edit("c"); v.edit("0");
-        assert(v.get_lhs() == "");
-        assert(v.get_rhs() == "cd");
-        assert(v.get_mode() == TextEditor::Mode::INSERT);
+        expect(v.get_lhs() == "");
+        expect(v.get_rhs() == "cd");
+        expect(v.get_mode() == TextEditor::Mode::INSERT);
     }
 
     {
@@ -1868,11 +1868,11 @@ static void test_TextEditorVi(void)
         TextEditorVi v("ab", "cd", {});
         v.edit("\x1B");
         v.edit("y"); v.edit("$");
-        assert(v.get_lhs() == "ab");   // buffer unchanged
-        assert(v.get_rhs() == "cd");
+        expect(v.get_lhs() == "ab");   // buffer unchanged
+        expect(v.get_rhs() == "cd");
         v.edit("P");                   // paste yanked "cd" before cursor
-        assert(v.get_lhs() == "abcd");
-        assert(v.get_rhs() == "cd");
+        expect(v.get_lhs() == "abcd");
+        expect(v.get_rhs() == "cd");
     }
 
     {
@@ -1880,11 +1880,11 @@ static void test_TextEditorVi(void)
         TextEditorVi v("abc", "def", {});
         v.edit("\x1B");
         v.edit("y"); v.edit("0");
-        assert(v.get_lhs() == "abc");  // buffer unchanged
-        assert(v.get_rhs() == "def");
+        expect(v.get_lhs() == "abc");  // buffer unchanged
+        expect(v.get_rhs() == "def");
         v.edit("P");                   // paste yanked "abc" before cursor
-        assert(v.get_lhs() == "abcabc");
-        assert(v.get_rhs() == "def");
+        expect(v.get_lhs() == "abcabc");
+        expect(v.get_rhs() == "def");
     }
 
     ////////////////////////////////////////////////////////
@@ -1898,8 +1898,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("  hello world", "", {});
         v.edit("\x1B");
         v.edit("d"); v.edit("^");
-        assert(v.get_lhs() == "  ");
-        assert(v.get_rhs() == "");
+        expect(v.get_lhs() == "  ");
+        expect(v.get_rhs() == "");
     }
 
     {
@@ -1909,8 +1909,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "  hello", {});
         v.edit("\x1B");
         v.edit("d"); v.edit("^");
-        assert(v.get_lhs() == "");
-        assert(v.get_rhs() == "hello");
+        expect(v.get_lhs() == "");
+        expect(v.get_rhs() == "hello");
     }
 
     ////////////////////////////////////////////////////////
@@ -1922,8 +1922,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("hello world", "", {});
         v.edit("\x1B");
         v.edit("d"); v.edit("b");
-        assert(v.get_lhs() == "hello ");
-        assert(v.get_rhs() == "");
+        expect(v.get_lhs() == "hello ");
+        expect(v.get_rhs() == "");
     }
 
     {
@@ -1931,8 +1931,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("hello.world ", "", {});
         v.edit("\x1B");
         v.edit("d"); v.edit("B");
-        assert(v.get_lhs() == "");
-        assert(v.get_rhs() == "");
+        expect(v.get_lhs() == "");
+        expect(v.get_rhs() == "");
     }
 
     {
@@ -1940,9 +1940,9 @@ static void test_TextEditorVi(void)
         TextEditorVi v("hello world", "", {});
         v.edit("\x1B");
         v.edit("c"); v.edit("b");
-        assert(v.get_lhs() == "hello ");
-        assert(v.get_rhs() == "");
-        assert(v.get_mode() == TextEditor::Mode::INSERT);
+        expect(v.get_lhs() == "hello ");
+        expect(v.get_rhs() == "");
+        expect(v.get_mode() == TextEditor::Mode::INSERT);
     }
 
     {
@@ -1950,9 +1950,9 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "hello.world foo", {});
         v.edit("\x1B");
         v.edit("c"); v.edit("W");
-        assert(v.get_lhs() == "");
-        assert(v.get_rhs() == "foo");
-        assert(v.get_mode() == TextEditor::Mode::INSERT);
+        expect(v.get_lhs() == "");
+        expect(v.get_rhs() == "foo");
+        expect(v.get_mode() == TextEditor::Mode::INSERT);
     }
 
     ////////////////////////////////////////////////////////
@@ -1965,8 +1965,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "hello world", {});
         v.edit("\x1B");
         v.edit("d"); v.edit("e");
-        assert(v.get_lhs() == "");
-        assert(v.get_rhs() == " world");
+        expect(v.get_lhs() == "");
+        expect(v.get_rhs() == " world");
     }
 
     {
@@ -1975,8 +1975,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "foo.bar baz", {});
         v.edit("\x1B");
         v.edit("d"); v.edit("E");
-        assert(v.get_lhs() == "");
-        assert(v.get_rhs() == " baz");
+        expect(v.get_lhs() == "");
+        expect(v.get_rhs() == " baz");
     }
 
     ////////////////////////////////////////////////////////
@@ -1988,8 +1988,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "hello.world foo", {});
         v.edit("\x1B");
         v.edit("d"); v.edit("W");
-        assert(v.get_lhs() == "");
-        assert(v.get_rhs() == "foo");
+        expect(v.get_lhs() == "");
+        expect(v.get_rhs() == "foo");
     }
 
     {
@@ -1997,9 +1997,9 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "hello world", {});
         v.edit("\x1B");
         v.edit("c"); v.edit("w");
-        assert(v.get_lhs() == "");
-        assert(v.get_rhs() == "world");
-        assert(v.get_mode() == TextEditor::Mode::INSERT);
+        expect(v.get_lhs() == "");
+        expect(v.get_rhs() == "world");
+        expect(v.get_mode() == TextEditor::Mode::INSERT);
     }
 
     ////////////////////////////////////////////////////////
@@ -2012,11 +2012,11 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "hello world", {});
         v.edit("\x1B");
         v.edit("y"); v.edit("w");
-        assert(v.get_lhs() == "");          // buffer must be unchanged
-        assert(v.get_rhs() == "hello world");
+        expect(v.get_lhs() == "");          // buffer must be unchanged
+        expect(v.get_rhs() == "hello world");
         v.edit("P");                         // paste yanked "hello " before cursor
-        assert(v.get_lhs() == "hello ");
-        assert(v.get_rhs() == "hello world");
+        expect(v.get_lhs() == "hello ");
+        expect(v.get_rhs() == "hello world");
     }
 
     {
@@ -2025,11 +2025,11 @@ static void test_TextEditorVi(void)
         TextEditorVi v("hello world", "", {});
         v.edit("\x1B");
         v.edit("y"); v.edit("b");
-        assert(v.get_lhs() == "hello world"); // buffer must be unchanged
-        assert(v.get_rhs() == "");
+        expect(v.get_lhs() == "hello world"); // buffer must be unchanged
+        expect(v.get_rhs() == "");
         v.edit("P");                           // paste yanked "world" at current position
-        assert(v.get_lhs() == "hello worldworld");
-        assert(v.get_rhs() == "");
+        expect(v.get_lhs() == "hello worldworld");
+        expect(v.get_rhs() == "");
     }
 
     ////////////////////////////////////////////////////////
@@ -2041,8 +2041,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("abc", "", {});
         v.edit("\x1B");
         v.edit("r"); v.edit("X");
-        assert(v.get_lhs() == "abc");
-        assert(v.get_rhs() == "");
+        expect(v.get_lhs() == "abc");
+        expect(v.get_rhs() == "");
     }
 
     ////////////////////////////////////////////////////////
@@ -2054,8 +2054,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "abc", {});
         v.edit("\x1B");
         v.edit("d"); v.edit("z");
-        assert(v.get_lhs() == "");
-        assert(v.get_rhs() == "abc");
+        expect(v.get_lhs() == "");
+        expect(v.get_rhs() == "abc");
     }
 
     ////////////////////////////////////////////////////////
@@ -2067,8 +2067,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "abc", {});
         v.edit("\x1B");
         v.edit("p");
-        assert(v.get_lhs() == "a");
-        assert(v.get_rhs() == "bc");
+        expect(v.get_lhs() == "a");
+        expect(v.get_rhs() == "bc");
     }
 
     {
@@ -2076,8 +2076,8 @@ static void test_TextEditorVi(void)
         TextEditorVi v("", "abc", {});
         v.edit("\x1B");
         v.edit("P");
-        assert(v.get_lhs() == "");
-        assert(v.get_rhs() == "abc");
+        expect(v.get_lhs() == "");
+        expect(v.get_rhs() == "abc");
     }
 
 }   // }}}
@@ -2098,13 +2098,13 @@ static void test_tokenizers(void)
         {
             switch (count++)
             {
-                case 0: assert(sv == "ls");   break;
-                case 1: assert(sv == "-la");  break;
-                case 2: assert(sv == "/tmp"); break;
-                default: assert(false);
+                case 0: expect(sv == "ls");   break;
+                case 1: expect(sv == "-la");  break;
+                case 2: expect(sv == "/tmp"); break;
+                default: expect(false);
             }
         }
-        assert(count == 3);
+        expect(count == 3);
     }
 
     ////////////////////////////////////////////////////////
@@ -2117,13 +2117,13 @@ static void test_tokenizers(void)
         {
             switch (count++)
             {
-                case 0: assert(sv == "ls");  break;
-                case 1: assert(sv == " ");   break;
-                case 2: assert(sv == "-la"); break;
-                default: assert(false);
+                case 0: expect(sv == "ls");  break;
+                case 1: expect(sv == " ");   break;
+                case 2: expect(sv == "-la"); break;
+                default: expect(false);
             }
         }
-        assert(count == 3);
+        expect(count == 3);
     }
 
     ////////////////////////////////////////////////////////
@@ -2137,12 +2137,12 @@ static void test_tokenizers(void)
         {
             switch (count++)
             {
-                case 0: assert(sv == "echo");        break;
-                case 1: assert(sv == "hello world"); break;
-                default: assert(false);
+                case 0: expect(sv == "echo");        break;
+                case 1: expect(sv == "hello world"); break;
+                default: expect(false);
             }
         }
-        assert(count == 2);
+        expect(count == 2);
     }
 
     {
@@ -2152,12 +2152,12 @@ static void test_tokenizers(void)
         {
             switch (count++)
             {
-                case 0: assert(sv == "echo");        break;
-                case 1: assert(sv == "hello world"); break;
-                default: assert(false);
+                case 0: expect(sv == "echo");        break;
+                case 1: expect(sv == "hello world"); break;
+                default: expect(false);
             }
         }
-        assert(count == 2);
+        expect(count == 2);
     }
 
     ////////////////////////////////////////////////////////
@@ -2168,7 +2168,7 @@ static void test_tokenizers(void)
         uint32_t count = 0;
         for ([[maybe_unused]] const StringView sv : tokenize("", TOKENIZE_PLAIN))
             ++count;
-        assert(count == 0);
+        expect(count == 0);
     }
 
     ////////////////////////////////////////////////////////
@@ -2182,10 +2182,10 @@ static void test_tokenizers(void)
         for (const String& s : tokenize_with_placeholder_replacement("ls ~/docs", extra, TOKENIZE_PLAIN))
         {
             if (count == 1)
-                assert(s.find("docs") != String::npos and not s.starts_with("~"));
+                expect(s.find("docs") != String::npos and not s.starts_with("~"));
             ++count;
         }
-        assert(count == 2);
+        expect(count == 2);
     }
 
     ////////////////////////////////////////////////////////
@@ -2201,10 +2201,10 @@ static void test_tokenizers(void)
         for (const String& s : tokenize_with_placeholder_replacement("echo {key}", extra, TOKENIZE_PLAIN))
         {
             if (count == 1)
-                assert(s == "value");
+                expect(s == "value");
             ++count;
         }
-        assert(count == 2);
+        expect(count == 2);
     }
 
 }   // }}}
@@ -2220,25 +2220,25 @@ static void test_utf8(void)
     ////////////////////////////////////////////////////////
 
     // ASCII (1-byte) characters have a leading byte in 0x00–0x7F range.
-    assert(utf8_byte_size(0x41) == 1);  // 'A'
-    assert(utf8_byte_size(0x7F) == 1);  // DEL
+    expect(utf8_byte_size(0x41) == 1);  // 'A'
+    expect(utf8_byte_size(0x7F) == 1);  // DEL
 
     // 2-byte UTF-8 leading byte: 0xC0–0xDF.
-    assert(utf8_byte_size(0xC3) == 2);  // e.g. Latin Extended
+    expect(utf8_byte_size(0xC3) == 2);  // e.g. Latin Extended
 
     // 3-byte UTF-8 leading byte: 0xE0–0xEF.
-    assert(utf8_byte_size(0xE3) == 3);  // e.g. CJK characters (あ = 0xE3 0x81 0x82)
+    expect(utf8_byte_size(0xE3) == 3);  // e.g. CJK characters (あ = 0xE3 0x81 0x82)
 
     // 4-byte UTF-8 leading byte: 0xF0–0xF7.
-    assert(utf8_byte_size(0xF0) == 4);  // e.g. supplementary characters
+    expect(utf8_byte_size(0xF0) == 4);  // e.g. supplementary characters
 
     ////////////////////////////////////////////////////////
     // utf8_width: display width per codepoint
     ////////////////////////////////////////////////////////
 
-    assert(utf8_width(0x0041) == 1);  // 'A' (ASCII)
-    assert(utf8_width(0x3042) == 2);  // 'あ' (hiragana)
-    assert(utf8_width(0x4E2D) == 2);  // '中' (CJK unified ideograph)
+    expect(utf8_width(0x0041) == 1);  // 'A' (ASCII)
+    expect(utf8_width(0x3042) == 2);  // 'あ' (hiragana)
+    expect(utf8_width(0x4E2D) == 2);  // '中' (CJK unified ideograph)
 
     ////////////////////////////////////////////////////////
     // utf8_decode_iter: iterate codepoints of a UTF-8 string
@@ -2248,10 +2248,10 @@ static void test_utf8(void)
     Vector<uint32_t> codepoints;
     for (const auto& [codepoint, ptr] : utf8_decode_iter(str.data(), str.size()))
         codepoints.push_back(codepoint);
-    assert(codepoints.size() == 3);
-    assert(codepoints[0] == 0x0041);    // 'A'
-    assert(codepoints[1] == 0x3042);    // 'あ'
-    assert(codepoints[2] == 0x029e3d);  // '𩸽'
+    expect(codepoints.size() == 3);
+    expect(codepoints[0] == 0x0041);    // 'A'
+    expect(codepoints[1] == 0x3042);    // 'あ'
+    expect(codepoints[2] == 0x029e3d);  // '𩸽'
 
     ////////////////////////////////////////////////////////
     // utf8_encode: encode a Unicode codepoint to UTF-8
@@ -2261,15 +2261,15 @@ static void test_utf8(void)
 
     // 1-byte encoding (ASCII).
     utf8_encode(0x0041, buffer);
-    assert(std::strcmp(reinterpret_cast<const char*>(buffer), "A") == 0);
+    expect(std::strcmp(reinterpret_cast<const char*>(buffer), "A") == 0);
 
     // 3-byte encoding (hiragana).
     utf8_encode(0x3042, buffer);
-    assert(std::strcmp(reinterpret_cast<const char*>(buffer), "あ") == 0);
+    expect(std::strcmp(reinterpret_cast<const char*>(buffer), "あ") == 0);
 
     // 4-byte encoding (supplementary character).
     utf8_encode(0x029e3d, buffer);
-    assert(std::strcmp(reinterpret_cast<const char*>(buffer), "𩸽") == 0);
+    expect(std::strcmp(reinterpret_cast<const char*>(buffer), "𩸽") == 0);
 
     ////////////////////////////////////////////////////////
     // utf8_decode: single character decode
@@ -2279,8 +2279,8 @@ static void test_utf8(void)
         const uint8_t* p = reinterpret_cast<const uint8_t*>("あ");
         int32_t cp = 0;
         ptrdiff_t nbytes = utf8_decode(p, 3, &cp);
-        assert(nbytes == 3);
-        assert(cp == 0x3042);
+        expect(nbytes == 3);
+        expect(cp == 0x3042);
     }
 
     // ASCII decode.
@@ -2288,8 +2288,8 @@ static void test_utf8(void)
         const uint8_t* p = reinterpret_cast<const uint8_t*>("A");
         int32_t cp = 0;
         ptrdiff_t nbytes = utf8_decode(p, 1, &cp);
-        assert(nbytes == 1);
-        assert(cp == 0x0041);
+        expect(nbytes == 1);
+        expect(cp == 0x0041);
     }
 
     // 2-byte decode: U+00E9 LATIN SMALL LETTER E WITH ACUTE (é = 0xC3 0xA9).
@@ -2297,8 +2297,8 @@ static void test_utf8(void)
         const uint8_t p[] = {0xC3, 0xA9, 0x00};
         int32_t cp = 0;
         ptrdiff_t nbytes = utf8_decode(p, 2, &cp);
-        assert(nbytes == 2);
-        assert(cp == 0x00E9);
+        expect(nbytes == 2);
+        expect(cp == 0x00E9);
     }
 
     // 3-byte overlong encoding: 0xE0 0x80 0x80 decodes to U+0000 which is < 0x800,
@@ -2306,7 +2306,7 @@ static void test_utf8(void)
     {
         const uint8_t overlong3[] = {0xE0, 0x80, 0x80};
         int32_t cp = 0;
-        assert(utf8_decode(overlong3, 3, &cp) < 0);
+        expect(utf8_decode(overlong3, 3, &cp) < 0);
     }
 
     ////////////////////////////////////////////////////////
@@ -2318,9 +2318,9 @@ static void test_utf8(void)
         Vector<StringView> views;
         for (const StringView sv : utf8_iter(s.data(), s.size()))
             views.push_back(sv);
-        assert(views.size() == 2);
-        assert(views[0] == "A");
-        assert(views[1] == "あ");
+        expect(views.size() == 2);
+        expect(views[0] == "A");
+        expect(views[1] == "あ");
     }
 
     ////////////////////////////////////////////////////////
@@ -2330,15 +2330,15 @@ static void test_utf8(void)
     {
         const char* p = "あい";
         CharX cx = utf8_decode_next_charx(p);
-        assert(cx.size() == 3);       // "あ" is 3 bytes.
-        assert(cx.view() == "あ");
+        expect(cx.size() == 3);       // "あ" is 3 bytes.
+        expect(cx.view() == "あ");
     }
 
     {
         const char* p = "Abc";
         CharX cx = utf8_decode_next_charx(p);
-        assert(cx.size() == 1);
-        assert(cx.view() == "A");
+        expect(cx.size() == 1);
+        expect(cx.view() == "A");
     }
 
     ////////////////////////////////////////////////////////
@@ -2346,11 +2346,11 @@ static void test_utf8(void)
     ////////////////////////////////////////////////////////
 
     // Continuation bytes (0x80–0xBF) are not valid leading bytes.
-    assert(utf8_byte_size(0x80) == 0);
-    assert(utf8_byte_size(0xBF) == 0);
+    expect(utf8_byte_size(0x80) == 0);
+    expect(utf8_byte_size(0xBF) == 0);
 
     // 0xFF is also an invalid leading byte.
-    assert(utf8_byte_size(0xFF) == 0);
+    expect(utf8_byte_size(0xFF) == 0);
 
     ////////////////////////////////////////////////////////
     // utf8_decode: edge cases and error paths
@@ -2360,43 +2360,43 @@ static void test_utf8(void)
         int32_t cp = 0;
 
         // Null pointer returns 0 without crashing.
-        assert(utf8_decode(nullptr, 3, &cp) == 0);
+        expect(utf8_decode(nullptr, 3, &cp) == 0);
 
         // Size 0 returns 0 immediately.
         const uint8_t* p = reinterpret_cast<const uint8_t*>("A");
-        assert(utf8_decode(p, 0, &cp) == 0);
+        expect(utf8_decode(p, 0, &cp) == 0);
 
         // Null-terminator as first byte returns 0.
         const uint8_t nul = '\0';
-        assert(utf8_decode(&nul, 1, &cp) == 0);
+        expect(utf8_decode(&nul, 1, &cp) == 0);
 
         // Invalid leading byte (continuation byte 0x81) returns error.
         const uint8_t bad1[] = {0x81, 0x80};
-        assert(utf8_decode(bad1, 2, &cp) < 0);
+        expect(utf8_decode(bad1, 2, &cp) < 0);
 
         // 2-byte sequence with invalid continuation (0x40 is not 0x80–0xBF).
         const uint8_t bad2[] = {0xC3, 0x40};
-        assert(utf8_decode(bad2, 2, &cp) < 0);
+        expect(utf8_decode(bad2, 2, &cp) < 0);
 
         // 3-byte sequence with invalid continuation byte in second position.
         const uint8_t bad3[] = {0xE3, 0x40, 0x82};
-        assert(utf8_decode(bad3, 3, &cp) < 0);
+        expect(utf8_decode(bad3, 3, &cp) < 0);
 
         // 3-byte surrogate half (U+D800 = 0xED 0xA0 0x80) is invalid.
         const uint8_t surr[] = {0xED, 0xA0, 0x80};
-        assert(utf8_decode(surr, 3, &cp) < 0);
+        expect(utf8_decode(surr, 3, &cp) < 0);
 
         // 4-byte: 0xF0 requires the second byte >= 0x90.
         const uint8_t f0low[] = {0xF0, 0x80, 0x80, 0x80};
-        assert(utf8_decode(f0low, 4, &cp) < 0);
+        expect(utf8_decode(f0low, 4, &cp) < 0);
 
         // 4-byte: 0xF4 requires the second byte <= 0x8F.
         const uint8_t f4hi[] = {0xF4, 0x90, 0x80, 0x80};
-        assert(utf8_decode(f4hi, 4, &cp) < 0);
+        expect(utf8_decode(f4hi, 4, &cp) < 0);
 
         // 4-byte: invalid continuation byte in the third position.
         const uint8_t bad4[] = {0xF0, 0x90, 0x40, 0x80};
-        assert(utf8_decode(bad4, 4, &cp) < 0);
+        expect(utf8_decode(bad4, 4, &cp) < 0);
     }
 
     ////////////////////////////////////////////////////////
@@ -2407,15 +2407,15 @@ static void test_utf8(void)
         uint8_t buf[5] = {0};
 
         // Negative codepoint is invalid — returns 0.
-        assert(utf8_encode(-1, buf) == 0);
+        expect(utf8_encode(-1, buf) == 0);
 
         // 2-byte encoding (U+0080).
-        assert(utf8_encode(0x0080, buf) == 2);
-        assert((buf[0] & 0xE0) == 0xC0);  // Leading byte: 110xxxxx.
-        assert((buf[1] & 0xC0) == 0x80);  // Continuation byte: 10xxxxxx.
+        expect(utf8_encode(0x0080, buf) == 2);
+        expect((buf[0] & 0xE0) == 0xC0);  // Leading byte: 110xxxxx.
+        expect((buf[1] & 0xC0) == 0x80);  // Continuation byte: 10xxxxxx.
 
         // Codepoint >= 0x110000 is out of Unicode range — returns 0.
-        assert(utf8_encode(0x110000, buf) == 0);
+        expect(utf8_encode(0x110000, buf) == 0);
     }
 
     ////////////////////////////////////////////////////////
@@ -2424,7 +2424,7 @@ static void test_utf8(void)
 
     {
         const CharX cx = utf8_decode_next_charx(nullptr);
-        assert(cx.size() == 0);
+        expect(cx.size() == 0);
     }
 
     ////////////////////////////////////////////////////////
@@ -2433,8 +2433,8 @@ static void test_utf8(void)
 
     // These must not crash; the return value for invalid codepoints is implementation-defined
     // but should be non-negative.
-    assert(utf8_width(-1) >= 0);
-    assert(utf8_width(0x110000) >= 0);
+    expect(utf8_width(-1) >= 0);
+    expect(utf8_width(0x110000) >= 0);
 
 }   // }}}
 
@@ -2448,13 +2448,13 @@ static void test_utils(void)
     // min / max / clip templates
     ////////////////////////////////////////////////////////
 
-    assert(min(3, 5)  == 3);
-    assert(min(-1, 1) == -1);
-    assert(max(3, 5)  == 5);
-    assert(max(-1, 1) == 1);
-    assert(clip(5, 0, 10)  == 5);   // Within range.
-    assert(clip(-1, 0, 10) == 0);   // Below lower bound.
-    assert(clip(15, 0, 10) == 10);  // Above upper bound.
+    expect(min(3, 5)  == 3);
+    expect(min(-1, 1) == -1);
+    expect(max(3, 5)  == 5);
+    expect(max(-1, 1) == 1);
+    expect(clip(5, 0, 10)  == 5);   // Within range.
+    expect(clip(-1, 0, 10) == 0);   // Below lower bound.
+    expect(clip(15, 0, 10) == 10);  // Above upper bound.
 
     ////////////////////////////////////////////////////////
     // deduplicate: in-place unique + sort
@@ -2463,17 +2463,17 @@ static void test_utils(void)
     {
         Vector<int> v = {3, 1, 2, 1, 3};
         deduplicate(v);
-        assert(v.size() == 3);
-        assert(v[0] == 1);
-        assert(v[1] == 2);
-        assert(v[2] == 3);
+        expect(v.size() == 3);
+        expect(v[0] == 1);
+        expect(v[1] == 2);
+        expect(v[2] == 3);
     }
 
     // Empty vector stays empty.
     {
         Vector<int> v;
         deduplicate(v);
-        assert(v.empty());
+        expect(v.empty());
     }
 
     ////////////////////////////////////////////////////////
@@ -2485,10 +2485,10 @@ static void test_utils(void)
     {
         switch (count++)
         {
-            case 0 : assert(sv == "this"); break;
-            case 1 : assert(sv == "is");   break;
-            case 2 : assert(sv == "csv");  break;
-            default: assert(false);
+            case 0 : expect(sv == "this"); break;
+            case 1 : expect(sv == "is");   break;
+            case 2 : expect(sv == "csv");  break;
+            default: expect(false);
         }
     }
 
@@ -2497,10 +2497,10 @@ static void test_utils(void)
         uint32_t n = 0;
         for (const StringView sv : split("nodel", ","))
         {
-            assert(sv == "nodel");
+            expect(sv == "nodel");
             ++n;
         }
-        assert(n == 1);
+        expect(n == 1);
     }
 
     // Empty delimiter yields the whole string.
@@ -2508,65 +2508,65 @@ static void test_utils(void)
         uint32_t n = 0;
         for (const StringView sv : split("abc", ""))
         {
-            assert(sv == "abc");
+            expect(sv == "abc");
             ++n;
         }
-        assert(n == 1);
+        expect(n == 1);
     }
 
     ////////////////////////////////////////////////////////
     // replace: substring replacement
     ////////////////////////////////////////////////////////
 
-    assert(replace("hello world", "world", "Japan") == "hello Japan");
-    assert(replace("aaa", "a", "bb") == "bbbbbb");
+    expect(replace("hello world", "world", "Japan") == "hello Japan");
+    expect(replace("aaa", "a", "bb") == "bbbbbb");
 
     // No match: original string returned.
-    assert(replace("hello", "xyz", "abc") == "hello");
+    expect(replace("hello", "xyz", "abc") == "hello");
 
     // Replace with empty string (effectively deletes the old string).
-    assert(replace("hello world", "world", "") == "hello ");
+    expect(replace("hello world", "world", "") == "hello ");
 
     ////////////////////////////////////////////////////////
     // strip: whitespace trimming
     ////////////////////////////////////////////////////////
 
-    assert(strip("  hello  ") == "hello");
-    assert(strip("  hello  ", true, false) == "hello  ");   // left only.
-    assert(strip("  hello  ", false, true) == "  hello");   // right only.
-    assert(strip("hello") == "hello");                       // No whitespace.
-    assert(strip("   ") == "");                              // All whitespace.
+    expect(strip("  hello  ") == "hello");
+    expect(strip("  hello  ", true, false) == "hello  ");   // left only.
+    expect(strip("  hello  ", false, true) == "  hello");   // right only.
+    expect(strip("hello") == "hello");                       // No whitespace.
+    expect(strip("   ") == "");                              // All whitespace.
 
     ////////////////////////////////////////////////////////
     // expand_tilde: tilde expansion
     ////////////////////////////////////////////////////////
 
-    assert(expand_tilde("~/.config").ends_with("/.config"));
-    assert(expand_tilde(".config").ends_with(".config"));
+    expect(expand_tilde("~/.config").ends_with("/.config"));
+    expect(expand_tilde(".config").ends_with(".config"));
 
     // Path without tilde prefix is returned unchanged.
-    assert(expand_tilde("/usr/local") == "/usr/local");
+    expect(expand_tilde("/usr/local") == "/usr/local");
 
     ////////////////////////////////////////////////////////
     // hash: FNV-1a hash function
     ////////////////////////////////////////////////////////
 
     // The same string should always produce the same hash.
-    assert(hash("hello") == hash("hello"));
+    expect(hash("hello") == hash("hello"));
 
     // Different strings should (almost always) produce different hashes.
-    assert(hash("hello") != hash("world"));
+    expect(hash("hello") != hash("world"));
 
     // Null string should return the initial hash value.
     const char* null_str = nullptr;
-    assert(hash(null_str) == 0xcbf29ce484222325ULL);
+    expect(hash(null_str) == 0xcbf29ce484222325ULL);
 
     ////////////////////////////////////////////////////////
     // get_time: formatted time string
     ////////////////////////////////////////////////////////
 
     time_t raw_time = std::time(nullptr);
-    assert(get_time(raw_time, "%Y/%m/%d").size() > 0);
+    expect(get_time(raw_time, "%Y/%m/%d").size() > 0);
 
     ////////////////////////////////////////////////////////
     // readline: generator-based file reading
@@ -2577,7 +2577,7 @@ static void test_utils(void)
         uint32_t n = 0;
         for ([[maybe_unused]] const String& line : readline("/non_existent_file_xyz"))
             ++n;
-        assert(n == 0);
+        expect(n == 0);
     }
 
     // Existing file (this test file itself) should have multiple lines.
@@ -2585,7 +2585,7 @@ static void test_utils(void)
         uint32_t n = 0;
         for ([[maybe_unused]] const String& line : readline("test_main.cxx"))
             ++n;
-        assert(n > 10);
+        expect(n > 10);
     }
 
     ////////////////////////////////////////////////////////
@@ -2603,10 +2603,10 @@ static void test_utils(void)
     {
         switch (count++)
         {
-            case 0 : assert(sv == "timeout");    break;
-            case 1 : assert(sv == "0.1s");       break;
-            case 2 : assert(sv == "ls --help");  break;
-            default: assert(false);
+            case 0 : expect(sv == "timeout");    break;
+            case 1 : expect(sv == "0.1s");       break;
+            case 2 : expect(sv == "ls --help");  break;
+            default: expect(false);
         }
     }
 
@@ -2664,29 +2664,29 @@ static void test_readcmd(void)
     print_header("Unit test for readcmd function");
 
     // Command completions.
-    assert(run_test_readcmd("ls -l\n", "ls -l", ""));
-    assert(run_test_readcmd("ls ~/\n", "ls ~/", ""));
-    assert(run_test_readcmd("ls Makefile \n", "ls Makefile ", ""));
-    assert(run_test_readcmd("git bra\t\n", "git branch ", ""));
-    assert(run_test_readcmd("ls ../tests\t \n", "ls ../tests/ ", ""));
-    assert(run_test_readcmd("ls ./source/cxx/conf\t \n", "ls ./source/cxx/config. ", ""));
+    expect(run_test_readcmd("ls -l\n", "ls -l", ""));
+    expect(run_test_readcmd("ls ~/\n", "ls ~/", ""));
+    expect(run_test_readcmd("ls Makefile \n", "ls Makefile ", ""));
+    expect(run_test_readcmd("git bra\t\n", "git branch ", ""));
+    expect(run_test_readcmd("ls ../tests\t \n", "ls ../tests/ ", ""));
+    expect(run_test_readcmd("ls ./source/cxx/conf\t \n", "ls ./source/cxx/config. ", ""));
 
     // Simple typing followed by Enter.
-    assert(run_test_readcmd("p\n", "p", ""));
+    expect(run_test_readcmd("p\n", "p", ""));
 
     // History completions.
-    assert(run_test_readcmd("previ\x05\n", "previous input2 ", ""));
-    assert(run_test_readcmd("previous input1\x05\n", "previous input1 ", ""));
+    expect(run_test_readcmd("previ\x05\n", "previous input2 ", ""));
+    expect(run_test_readcmd("previous input1\x05\n", "previous input1 ", ""));
 
     // Test the stop key.
-    assert(run_test_readcmd("\x06\n", "^F", ""));
+    expect(run_test_readcmd("\x06\n", "^F", ""));
 
     // Ctrl-C and Ctrl-D.
-    assert(run_test_readcmd("\x03", "^C", ""));
-    assert(run_test_readcmd("\x04\n", "^D", ""));
+    expect(run_test_readcmd("\x03", "^C", ""));
+    expect(run_test_readcmd("\x04\n", "^D", ""));
 
     // Test carapace.
-    assert(run_test_readcmd("apk install git\n", "apk install git", ""));
+    expect(run_test_readcmd("apk install git\n", "apk install git", ""));
 
     ////////////////////////////////////////////////////////
     // readcmd with non-empty rhs_ini: exercises update() rhs branch
@@ -2699,8 +2699,8 @@ static void test_readcmd(void)
         try
         {
             ReadCmdOut rc_out = readcmd("hello ", "world", hists, "emacs", "\n", cfg);
-            assert(rc_out.lhs == "hello ");
-            assert(rc_out.rhs == "world");
+            expect(rc_out.lhs == "hello ");
+            expect(rc_out.rhs == "world");
         }
         catch (const std::exception& e)
         {
@@ -2720,11 +2720,11 @@ static void test_readcmd(void)
 
         // A vector with a different number of lines than area_height triggers the early return.
         const Vector<String> wrong_lines = {"only one line"};
-        assert(termui.update_lines(wrong_lines) == false);
+        expect(termui.update_lines(wrong_lines) == false);
 
         // A vector with exactly area_height lines should succeed.
         const Vector<String> correct_lines(cfg.area_height, "\x1B[0K");
-        assert(termui.update_lines(correct_lines) == true);
+        expect(termui.update_lines(correct_lines) == true);
     }
 
 }   // }}}
@@ -2851,7 +2851,7 @@ static void test_EditHelper(void)
 
     {
         EditHelper eh(8, 80, cfg);
-        assert(true);
+        expect(true);
     }
 
     ////////////////////////////////////////////////////////
@@ -2861,7 +2861,7 @@ static void test_EditHelper(void)
     {
         EditHelper eh(8, 80, cfg);
         const Vector<String> lines = eh.candidate("");
-        assert(lines.size() == (size_t) cfg.area_height);
+        expect(lines.size() == (size_t) cfg.area_height);
     }
 
     ////////////////////////////////////////////////////////
@@ -2872,7 +2872,7 @@ static void test_EditHelper(void)
         EditHelper eh(8, 80, cfg);
         const Vector<String> lines = eh.candidate("./");
         // Must return area_height lines; some files/dirs should be found.
-        assert(lines.size() == (size_t) cfg.area_height);
+        expect(lines.size() == (size_t) cfg.area_height);
     }
 
     ////////////////////////////////////////////////////////
@@ -2882,7 +2882,7 @@ static void test_EditHelper(void)
     {
         EditHelper eh(8, 80, cfg);
         const Vector<String> lines = eh.candidate("ls");
-        assert(lines.size() == (size_t) cfg.area_height);
+        expect(lines.size() == (size_t) cfg.area_height);
     }
 
     ////////////////////////////////////////////////////////
@@ -2892,7 +2892,7 @@ static void test_EditHelper(void)
     {
         EditHelper eh(8, 80, cfg);
         const Vector<String> lines = eh.candidate("ls ");
-        assert(lines.size() == (size_t) cfg.area_height);
+        expect(lines.size() == (size_t) cfg.area_height);
     }
 
     ////////////////////////////////////////////////////////
@@ -2902,7 +2902,7 @@ static void test_EditHelper(void)
     {
         EditHelper eh(8, 80, cfg);
         const Vector<String> lines = eh.candidate("ls --");
-        assert(lines.size() == (size_t) cfg.area_height);
+        expect(lines.size() == (size_t) cfg.area_height);
     }
 
     ////////////////////////////////////////////////////////
@@ -2913,7 +2913,7 @@ static void test_EditHelper(void)
         EditHelper eh(8, 80, cfg);
         // Makefile exists in the tests/ working directory.
         const Vector<String> lines = eh.candidate("cat Makefile ");
-        assert(lines.size() == (size_t) cfg.area_height);
+        expect(lines.size() == (size_t) cfg.area_height);
     }
 
     ////////////////////////////////////////////////////////
@@ -2923,7 +2923,7 @@ static void test_EditHelper(void)
     {
         EditHelper eh(8, 80, cfg);
         const Vector<String> lines = eh.candidate("git ");
-        assert(lines.size() == (size_t) cfg.area_height);
+        expect(lines.size() == (size_t) cfg.area_height);
     }
 
     ////////////////////////////////////////////////////////
@@ -2933,7 +2933,7 @@ static void test_EditHelper(void)
     {
         EditHelper eh(8, 80, cfg);
         const Vector<String> lines = eh.candidate("make ");
-        assert(lines.size() == (size_t) cfg.area_height);
+        expect(lines.size() == (size_t) cfg.area_height);
     }
 
     ////////////////////////////////////////////////////////
@@ -2943,13 +2943,13 @@ static void test_EditHelper(void)
     {
         EditHelper eh(8, 80, cfg);
         const Vector<String> lines = eh.candidate("cat area");
-        assert(lines.size() == (size_t) cfg.area_height);
+        expect(lines.size() == (size_t) cfg.area_height);
 
         // "area_height" from misc/config.toml should be a candidate.
         bool found_area_height = false;
         for (const String& line : lines)
             if (line.find("area_height") != String::npos) { found_area_height = true; break; }
-        assert(found_area_height);
+        expect(found_area_height);
     }
 
     ////////////////////////////////////////////////////////
@@ -2960,7 +2960,7 @@ static void test_EditHelper(void)
         EditHelper eh(8, 80, cfg);
         const Vector<String> lines1 = eh.candidate("git ");
         const Vector<String> lines2 = eh.candidate("git ");   // cache hit on lhs
-        assert(lines1 == lines2);
+        expect(lines1 == lines2);
     }
 
     ////////////////////////////////////////////////////////
@@ -2975,8 +2975,8 @@ static void test_EditHelper(void)
         // "git " – same pattern but different lhs; if hash_mat is the same, cache_cands_mat hits
         // (This exercises the mat-cache path when different lhs leads to same matched tokens.)
         [[maybe_unused]] const Vector<String> lines2 = eh.candidate("git ");
-        assert(lines1.size() == (size_t) cfg.area_height);
-        assert(lines2.size() == (size_t) cfg.area_height);
+        expect(lines1.size() == (size_t) cfg.area_height);
+        expect(lines2.size() == (size_t) cfg.area_height);
     }
 
     ////////////////////////////////////////////////////////
@@ -2987,7 +2987,7 @@ static void test_EditHelper(void)
         EditHelper eh(8, 80, cfg);
         eh.candidate("xyzzy_nonexistent_cmd ");  // populates cands (empty)
         const String result = eh.complete("xyzzy_nonexistent_cmd ");
-        assert(result == "xyzzy_nonexistent_cmd ");
+        expect(result == "xyzzy_nonexistent_cmd ");
     }
 
     ////////////////////////////////////////////////////////
@@ -2998,7 +2998,7 @@ static void test_EditHelper(void)
         EditHelper eh(8, 80, cfg);
         eh.candidate("");
         const String result = eh.complete("");
-        assert(result == "");
+        expect(result == "");
     }
 
     ////////////////////////////////////////////////////////
@@ -3011,8 +3011,8 @@ static void test_EditHelper(void)
         eh.candidate("cat column_pad");
         const String result = eh.complete("cat column_pad");
         // Result must start with "cat " and end with "column_padding "
-        assert(result.starts_with("cat "));
-        assert(result.find("column_padding") != String::npos);
+        expect(result.starts_with("cat "));
+        expect(result.find("column_padding") != String::npos);
     }
 
     ////////////////////////////////////////////////////////
@@ -3025,7 +3025,7 @@ static void test_EditHelper(void)
         eh.candidate("git ");
         const String result = eh.complete("git ");
         // Result should not crash and be a string starting with "git "
-        assert(result.starts_with("git "));
+        expect(result.starts_with("git "));
     }
 
     ////////////////////////////////////////////////////////
@@ -3038,7 +3038,7 @@ static void test_EditHelper(void)
         eh.candidate("./source");
         const String result = eh.complete("./source");
         // Result should be "source/" (path only) or "./source/"
-        assert(result.find("source") != String::npos);
+        expect(result.find("source") != String::npos);
     }
 
     ////////////////////////////////////////////////////////
@@ -3050,7 +3050,7 @@ static void test_EditHelper(void)
         // Use a very wide area so all candidates fit in one row.
         EditHelper eh(8, 200, cfg);
         const Vector<String> lines = eh.candidate("cat area");
-        assert(lines.size() == (size_t) cfg.area_height);
+        expect(lines.size() == (size_t) cfg.area_height);
     }
 
     ////////////////////////////////////////////////////////
@@ -3062,7 +3062,7 @@ static void test_EditHelper(void)
         // "tar xvf" has no specific entry and the last token "xvf" is non-empty,
         // non-dash, not an existing file -> matches [[">>", ".*"], "bashcomp", ""].
         const Vector<String> lines = eh.candidate("tar xvf");
-        assert(lines.size() == (size_t) cfg.area_height);
+        expect(lines.size() == (size_t) cfg.area_height);
     }
 
     ////////////////////////////////////////////////////////
@@ -3073,7 +3073,7 @@ static void test_EditHelper(void)
         EditHelper eh(8, 80, cfg);
         const Vector<String> lines1 = eh.candidate("tar xvf");
         const Vector<String> lines2 = eh.candidate("tar xvf");  // lhs-cache hit
-        assert(lines1 == lines2);
+        expect(lines1 == lines2);
     }
 
     ////////////////////////////////////////////////////////
@@ -3087,8 +3087,8 @@ static void test_EditHelper(void)
         const Vector<String> lines_tar = eh.candidate("tar xvf");
         const Vector<String> lines_pip = eh.candidate("pip xvf");
         // Both calls must return area_height lines without crashing.
-        assert(lines_tar.size() == (size_t) cfg.area_height);
-        assert(lines_pip.size() == (size_t) cfg.area_height);
+        expect(lines_tar.size() == (size_t) cfg.area_height);
+        expect(lines_pip.size() == (size_t) cfg.area_height);
     }
 
 }   // }}}

@@ -23,10 +23,11 @@ class CarapaceService
         // Constructors and destructors
         ////////////////////////////////////////////////////////////////////////////////////////////
 
-         CarapaceService(void); // Constructor: spawns a bash child process and initialises bash-completion.
-        ~CarapaceService(void); // Destructor : closes the pipes and reaps the child process.
+         CarapaceService(void);
+        ~CarapaceService(void);
+        // Constructor and destructor for the CarapaceService class.
 
-        // NOTE: This class should be non-copyable and non-movable, because this class owns raw file descriptors.
+        // NOTE: This class should be non-copyable and non-movable.
         CarapaceService(const CarapaceService&)              = delete;
         CarapaceService& operator = (const CarapaceService&) = delete;
         CarapaceService(CarapaceService&&)                   = delete;

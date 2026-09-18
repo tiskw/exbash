@@ -113,7 +113,8 @@ Vector<String> preview(StringView path, uint16_t height, const StringMap& previe
     Vector<String> result;
 
     // Do nothing if the target file path does not exist.
-    if (not stdfs::exists(Path(path)))
+    std::error_code ec;
+    if (not stdfs::exists(Path(path), ec) or ec)
         return result;
 
     // Compute file type string of the preview target.

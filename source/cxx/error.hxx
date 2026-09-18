@@ -52,6 +52,12 @@ int32_t print_errmsg(const char (&etype)[], const char (&filename)[], int32_t li
 // [Notes]
 //   The argument "etype", "filename", and "funcname" accept only string literals.
 
+void set_tui_active(bool active);
+// Set the TUI active flag.
+//
+// [Args]
+//   active (bool): [IN] True if the TUI is active, false otherwise.
+
 #endif
 
 // vim: expandtab tabstop=4 shiftwidth=4 fdm=marker

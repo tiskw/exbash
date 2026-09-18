@@ -50,7 +50,7 @@ struct ExBashConfig
     String path_bash_info = "/tmp/exbash-{uid}/bash_info.txt";
 
     // Path to plugin output file.
-    String output_plugin = "/dev/shm/exbash/plugin.out";
+    String output_plugin = "/dev/shm/exbash-{uid}/plugin.out";
 
     ////////////////////////////////////////////////////////////////////////////
     // Prompt strings.

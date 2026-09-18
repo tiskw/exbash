@@ -295,15 +295,18 @@ namespace
             if (pattern == ">>")
                 index_token = tokens.size() - patterns.size() + index_pattern;
 
-            // Case 2: pattern is "FILE" but the file not exists.
-            else if (pattern == "FILE" and (not stdfs::exists(token)))
-                return false;
-
-            // Case 3: pattern is "FILE" and the file exists.
+            // Case 2: pattern is "FILE".
             else if (pattern == "FILE")
-                /* pass */;
+            {
+                // If the file does not exist, then returns false.
+                std::error_code ec;
+                if (not stdfs::exists(token, ec) or ec)
+                    return false;
 
-            // Case 4: others.
+                // Otherwise, the file exists, do nothing and continue to the next token.
+            }
+
+            // Case 3: others.
             else if (not regex_match(token.begin(), token.end(), pattern_regex))
                 return false;
 
@@ -469,6 +472,12 @@ Vector<String> EditHelper::candidate(StringView lhs)
     // Register the completion result to the cache.
     if (comp_type != CompType::NONE)
         this->cache_cands_lhs[hash_lhs] = {this->cands, this->lines};
+
+    // Clear the cache if the number of cache entries exceeds the maximum limit.
+    constexpr SizeType max_cache_entries = 256;
+    if (this->cache_cands_lhs.size() > max_cache_entries) { this->cache_cands_lhs.clear(); }
+    if (this->opt_cache.size()       > max_cache_entries) { this->opt_cache.clear();       }
+    if (this->subcmd_cache.size()    > max_cache_entries) { this->subcmd_cache.clear();    }
 
     return this->lines;
 
@@ -794,7 +803,9 @@ void EditHelper::cands_preview(const Vector<StringView>& tokens)
     const StringView path = get_last_nonwhitespace_token(tokens);
 
     // Compute width of the preview window.
-    const uint16_t width_prev = this->area_size.cols - int(this->area_size.cols * this->preview_ratio) - this->preview_delim.size();
+    const uint16_t width_prev = static_cast<uint16_t>(max(static_cast<int32_t>(this->area_size.cols)
+                                                        - static_cast<int32_t>(this->area_size.cols * this->preview_ratio)
+                                                        - static_cast<int32_t>(this->preview_delim.size()), 1));
 
     // Get preview result.
     Vector<String> preview_lines = preview(path, this->area_size.rows, this->previews);

@@ -259,6 +259,7 @@ ExBashConfig load_config(StringView path_cfg)
     const String uid_str = std::to_string(getuid());
     cfg.path_cmnd_info = replace(cfg.path_cmnd_info, "{uid}", uid_str);
     cfg.path_bash_info = replace(cfg.path_bash_info, "{uid}", uid_str);
+    cfg.output_plugin  = replace(cfg.output_plugin,  "{uid}", uid_str);
 
     return cfg;
 
