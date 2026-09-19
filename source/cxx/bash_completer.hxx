@@ -50,8 +50,11 @@ class BashCompleter
         // Constructors and destructors
         ////////////////////////////////////////////////////////////////////////////////////////////
 
-         BashCompleter(void); // Constructor: spawns a bash child process and initialises bash-completion.
-        ~BashCompleter(void); // Destructor : closes the pipes and reaps the child process.
+         BashCompleter(void);
+        ~BashCompleter(void);
+        // Constructor and destructor for the BashCompleter class.
+        // The constructor spawns a bash child process and initializes bash-completion,
+        // while the destructor closes the pipes and reaps the child process.
 
         // NOTE: This class should be non-copyable and non-movable, because this class owns raw file descriptors.
         BashCompleter(const BashCompleter&)            = delete;

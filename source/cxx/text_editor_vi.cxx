@@ -20,64 +20,103 @@ namespace
     using CharClass = TextEditor::CharClass;
     using CharInfo  = TextEditor::CharInfo;
 
-    Vector<CharInfo> collect_chars(StringView sv)  { return TextEditor::collect_chars(sv); }
-
     PtrDiff word_fwd_count(StringView rhs, bool bigword)
     // Return the number of UTF-8 characters to advance for w/W.
+    //
+    // [Args]
+    //   rhs     (StringView): [IN] The right-hand-side string to analyze.
+    //   bigword (bool)      : [IN] If true, treat all non-space characters as a single word (W),
+    //                              otherwise treat only WORD characters as a word (w).
+    //
+    // [Returns]
+    //   (PtrDiff): Number of UTF-8 characters to advance to reach the start of the next word.
+    //
     {   // {{{
 
+        // If the input string is empty, there are no characters to skip.
         if (rhs.empty()) return 0;
-        const auto chars = collect_chars(rhs);
+
+        // Get the character info vector for rhs.
+        const Vector<CharInfo> chars = TextEditor::collect_char_info(rhs);
         if (chars.empty()) return 0;
 
-        SizeType  idx   = 0;
-        PtrDiff count = 0;
+        // Initialize the index and count variables.
+        SizeType idx   = 0;
+        PtrDiff  count = 0;
 
         if (bigword)
         {
-            while (idx < chars.size() && chars[idx].cls != CharClass::SPACE) { ++idx; ++count; }
-            while (idx < chars.size() && chars[idx].cls == CharClass::SPACE) { ++idx; ++count; }
+            // Skip any leading non-space characters, then skip any space characters.
+            while ((idx < chars.size()) and (chars[idx].cls != CharClass::SPACE)) { ++idx; ++count; }
+            while ((idx < chars.size()) and (chars[idx].cls == CharClass::SPACE)) { ++idx; ++count; }
         }
         else
         {
+            // Get the character class of the first character in rhs.
             CharClass start = chars[0].cls;
+
+            // If the first character is a space, skip all leading spaces.
             if (start == CharClass::SPACE)
             {
                 while (idx < chars.size() && chars[idx].cls == CharClass::SPACE) { ++idx; ++count; }
             }
+            // Otherwise, skip all characters of the same class as the first character, then skip any trailing spaces.
             else
             {
                 while (idx < chars.size() && chars[idx].cls == start)           { ++idx; ++count; }
                 while (idx < chars.size() && chars[idx].cls == CharClass::SPACE) { ++idx; ++count; }
             }
         }
+
         return count;
 
     }   // }}}
 
-    // Return the number of UTF-8 characters to move backward for b/B.
     PtrDiff word_bwd_count(StringView lhs, bool bigword)
+    // Return the number of UTF-8 characters to move backward for b/B.
+    //
+    // [Args]
+    //   lhs     (StringView): [IN] The left-hand-side string to analyze.
+    //   bigword (bool)      : [IN] If true, treat all non-space characters as a single word (B),
+    //                              otherwise treat only WORD characters as a word (b).
+    //
+    // [Returns]
+    //   (PtrDiff): Number of UTF-8 characters to move backward to reach the start of the previous word.
+    //
     {   // {{{
 
+        // If the input string is empty, there are no characters to skip.
         if (lhs.empty()) return 0;
-        const auto chars = collect_chars(lhs);
+
+        // Get the character info vector for lhs.
+        const Vector<CharInfo> chars = TextEditor::collect_char_info(lhs);
         if (chars.empty()) return 0;
 
-        int     idx   = static_cast<int>(chars.size()) - 1;
+        // Initialize the index and count variables.
+        int32_t idx   = static_cast<int>(chars.size()) - 1;
         PtrDiff count = 0;
 
         if (bigword)
         {
-            while (idx >= 0 && chars[idx].cls == CharClass::SPACE) { --idx; ++count; }
-            while (idx >= 0 && chars[idx].cls != CharClass::SPACE) { --idx; ++count; }
+            // Skip any trailing spaces, then skip any non-space characters.
+            while ((idx >= 0) and (chars[idx].cls == CharClass::SPACE)) { --idx; ++count; }
+            while ((idx >= 0) and (chars[idx].cls != CharClass::SPACE)) { --idx; ++count; }
         }
         else
         {
-            while (idx >= 0 && chars[idx].cls == CharClass::SPACE) { --idx; ++count; }
+            // Skip any trailing spaces.
+            while ((idx >= 0) and (chars[idx].cls == CharClass::SPACE))
+            { --idx; ++count; }
+
+            // Return the count if we have reached the beginning of the string.
             if (idx < 0) return count;
+
+            // Get the character class of the last non-space character in lhs, and skip all characters of that class.
             CharClass target = chars[idx].cls;
-            while (idx >= 0 && chars[idx].cls == target)           { --idx; ++count; }
+            while ((idx >= 0) and (chars[idx].cls == target))
+            { --idx; ++count; }
         }
+
         return count;
 
     }   // }}}
@@ -86,26 +125,49 @@ namespace
     // Return the number of UTF-8 characters to advance to reach the end of the next word for e/E.
     // Returns 0 if the cursor is already at the last character of the last word.
     //
+    // [Args]
+    //   rhs     (StringView): [IN] The right-hand-side string to analyze.
+    //   bigword (bool)      : [IN] If true, treat all non-space characters as a single word (E),
+    //                              otherwise treat only WORD characters as a word (e).
+    //
+    // [Returns]
+    //   (PtrDiff): Number of UTF-8 characters to advance to reach the end of the next word.
+    //
     {   // {{{
 
+        // If the input string is empty, there are no characters to skip.
         if (rhs.empty()) return 0;
-        const auto chars = collect_chars(rhs);
-        if (chars.size() <= 1) return 0;  // already at end, or only one char
 
-        SizeType  idx   = 1;
-        PtrDiff count = 1;
+        // Get the character info vector for rhs.
+        const Vector<CharInfo> chars = TextEditor::collect_char_info(rhs);
+
+        // If the input string is empty or has only one character, there are no characters to skip.
+        if (chars.size() <= 1) return 0;
+
+        // Initialize the index and count variables.
+        SizeType idx   = 1;
+        PtrDiff  count = 1;
 
         // Skip any leading spaces after current position.
         while (idx < chars.size() && chars[idx].cls == CharClass::SPACE) { ++idx; ++count; }
+
+        // Return 0 if we have reached the end of the string.
         if (idx >= chars.size()) return 0;
 
         // Advance to the last character of this word group.
         CharClass target = chars[idx].cls;
-        while (idx + 1 < chars.size())
+        while ((idx + 1) < chars.size())
         {
+            // Get the character class of the next character.
             CharClass next = chars[idx + 1].cls;
-            bool same_group = bigword ? (next != CharClass::SPACE) : (next == target);
-            if (!same_group) break;
+
+            // Determine if the next character belongs to the same word group as the current character.
+            bool is_same_group = bigword ? (next != CharClass::SPACE) : (next == target);
+
+            // Break the loop if the next character does not belong to the same word group.
+            if (not is_same_group) break;
+
+            // Increment both index and count.
             ++idx; ++count;
         }
         return count;
@@ -115,15 +177,32 @@ namespace
     PtrDiff first_nonblank_pos(StringView lhs, StringView rhs)
     // Return the UTF-8 character position (count from line start) of the first non-blank character.
     //
+    // [Args]
+    //   lhs (StringView): [IN] The left-hand-side string to analyze.
+    //   rhs (StringView): [IN] The right-hand-side string to analyze.
+    //
+    // [Returns]
+    //   (PtrDiff): UTF-8 character position of the first non-blank character, or the total character count if all are blank.
+    //
     {   // {{{
 
+        // Initialize the position counter.
         PtrDiff pos = 0;
+
+        // Iterate over both lhs and rhs.
         for (StringView sv : {lhs, rhs})
-            for (const CharInfo& ci : collect_chars(sv))
+        {
+            // Iterate over the characters in the current string view.
+            for (const CharInfo& ci : TextEditor::collect_char_info(sv))
             {
-                if (ci.cls != CharClass::SPACE) return pos;
+                // Return the current position if the character class is not SPACE.
+                if (ci.cls != CharClass::SPACE)
+                    return pos;
+
                 ++pos;
             }
+        }
+
         return pos;
 
     }   // }}}
@@ -288,22 +367,29 @@ void TextEditorVi::edit_normal(const char* str, SizeType size)
     if (ch == '~') // Toggle case of char under cursor.
     {
         StringView rhs = buffer.rhs_view();
-        if (!rhs.empty())
+
+        // Do nothing if the right-hand side is empty (no character under cursor).
+        if (rhs.empty()) return;
+
+        // Get the first character of rhs and check if it is an ASCII letter.
+        uint8_t c = static_cast<uint8_t>(rhs[0]);
+
+        // If it is an ASCII letter, toggle its case and replace it in the buffer.
+        if ((c < 0x80) and std::isalpha(static_cast<unsigned char>(c)))
         {
-            uint8_t c = static_cast<uint8_t>(rhs[0]);
-            if (c < 0x80 && std::isalpha(static_cast<unsigned char>(c)))
-            {
-                char toggled = std::isupper(static_cast<unsigned char>(c))
-                             ? static_cast<char>(std::tolower(static_cast<unsigned char>(c)))
-                             : static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
-                buffer.deletekey(1);
-                buffer.insert(&toggled, 1);
-            }
-            else
-            {
-                buffer.move_cursor(+1); // non-alpha: just advance
-            }
+            // Toggle the case of the character.
+            char c_toggled = std::isupper(static_cast<unsigned char>(c))
+                           ? static_cast<char>(std::tolower(static_cast<unsigned char>(c)))
+                           : static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+
+            // Replace the character under the cursor with the toggled character.
+            buffer.deletekey(1);
+            buffer.insert(&c_toggled, 1);
         }
+
+        // Otherwise, simply move the cursor forward.
+        else { buffer.move_cursor(+1); }
+
         return;
     }
 
@@ -332,6 +418,58 @@ void TextEditorVi::edit_normal(const char* str, SizeType size)
 void TextEditorVi::handle_pending(char motion)
 {   // {{{
 
+    constexpr auto apply_fwd = [](TextEditorVi* self, const char op, PtrDiff n) -> void
+    // Apply operator on the next n chars of rhs.
+    // This function is used for operators with forward motions.
+    //
+    // [Args]
+    //   self (TextEditorVi*): [IN] Pointer to the TextEditorVi instance.
+    //   op   (char)         : [IN] Operator character ('d', 'c', or 'y').
+    //   n    (PtrDiff)      : [IN] Number of characters to apply the operator on.
+    {
+        // Get a reference to the current editing buffer and the right-hand-side view.
+        GapBuffer&       buffer = self->current_buffer();
+        const StringView rhs    = buffer.rhs_view();
+
+        // Do nothing if n is invalid (= non-positive).
+        if (n <= 0) return;
+
+        // Yank the next n characters of rhs into the yank buffer.
+        self->yank_buffer = extract_front(rhs, n);
+
+        // Apply the operator to the next n characters of rhs.
+        if (op == 'd' || op == 'c') buffer.deletekey(n);
+
+        // Mode transition.
+        if (op == 'c') self->mode = Mode::INSERT;
+    };
+
+    constexpr auto apply_bwd = [](TextEditorVi* self, const char op, PtrDiff n) -> void
+    // Apply operator on the last n chars of lhs.
+    // This function is used for operators with backward motions.
+    //
+    // [Args]
+    //   self (TextEditorVi*): [IN] Pointer to the TextEditorVi instance.
+    //   op   (char)         : [IN] Operator character ('d', 'c', or 'y').
+    //   n    (PtrDiff)      : [IN] Number of characters to apply the operator on.
+    {
+        // Get a reference to the current editing buffer and the right-hand-side view.
+        GapBuffer&       buffer = self->current_buffer();
+        const StringView lhs    = buffer.lhs_view();
+
+        // Do nothing if n is invalid (= non-positive).
+        if (n <= 0) return;
+
+        // Yank the last n characters of lhs into the yank buffer.
+        self->yank_buffer = extract_back(lhs, n);
+
+        // Apply the operator to the last n characters of lhs.
+        if (op == 'd' || op == 'c') buffer.backspace(n);
+
+        // Mode transition.
+        if (op == 'c') self->mode = Mode::INSERT;
+    };
+
     // Get the pending operator and clear it immediately to avoid re-entrancy issues.
     const char op = this->pending_op;
     this->pending_op = 0;
@@ -339,70 +477,73 @@ void TextEditorVi::handle_pending(char motion)
     // Get a reference to the current editing buffer, for convenience.
     GapBuffer& buffer = this->current_buffer();
 
-    // ---- r: replace single character ----
+    // ----------------------------------------------------
+    // Operation only (r)
+    // ----------------------------------------------------
+
     if (op == 'r')
     {
-        if (!buffer.rhs_view().empty())
+        if (not buffer.rhs_view().empty())
         {
             buffer.deletekey(1);
             buffer.insert(&motion, 1);
-            buffer.move_cursor(-1); // stay on replaced character
+            buffer.move_cursor(-1);
         }
         return;
     }
 
-    // ---- d/c/y: operator + motion ----
+    // ----------------------------------------------------
+    // Operation and motion (c/d/y)
+    // ----------------------------------------------------
 
-    // Whole-line: dd, cc, yy
-    if (motion == op)
+    if ((op == 'c') or (op == 'd') or (op == 'y'))
     {
-        this->yank_buffer = String(buffer.lhs_view()) + String(buffer.rhs_view());
-        if (op == 'd' || op == 'c') buffer.erase();
-        if (op == 'c') this->mode = Mode::INSERT;
-        return;
-    }
-
-    const StringView lhs = buffer.lhs_view();
-    const StringView rhs = buffer.rhs_view();
-
-    // Helper: apply operator on the next n chars of rhs.
-    auto apply_fwd = [&](PtrDiff n)
-    {
-        if (n <= 0) return;
-        this->yank_buffer = extract_front(rhs, n);
-        if (op == 'd' || op == 'c') buffer.deletekey(n);
-        if (op == 'c') this->mode = Mode::INSERT;
-    };
-
-    // Helper: apply operator on the last n chars of lhs.
-    auto apply_bwd = [&](PtrDiff n)
-    {
-        if (n <= 0) return;
-        this->yank_buffer = extract_back(lhs, n);
-        if (op == 'd' || op == 'c') buffer.backspace(n);
-        if (op == 'c') this->mode = Mode::INSERT;
-    };
-
-    switch (motion)
-    {
-        case 'w': apply_fwd(word_fwd_count(rhs, false)); break;
-        case 'W': apply_fwd(word_fwd_count(rhs, true));  break;
-        case 'b': apply_bwd(word_bwd_count(lhs, false)); break;
-        case 'B': apply_bwd(word_bwd_count(lhs, true));  break;
-        case 'e': { PtrDiff n = word_end_count(rhs, false); if (n > 0) apply_fwd(n + 1); break; }
-        case 'E': { PtrDiff n = word_end_count(rhs, true);  if (n > 0) apply_fwd(n + 1); break; }
-        case '0': apply_bwd(static_cast<PtrDiff>(buffer.cursor())); break;
-        case '$': apply_fwd(static_cast<PtrDiff>(buffer.count() - buffer.cursor())); break;
-        case '^':
+        // Whole-line operations (dd/cc/yy).
+        if (motion == op)
         {
-            PtrDiff target  = first_nonblank_pos(lhs, rhs);
-            PtrDiff current = static_cast<PtrDiff>(buffer.cursor());
-            PtrDiff delta   = target - current;
-            if      (delta > 0) apply_fwd( delta);
-            else if (delta < 0) apply_bwd(-delta);
-            break;
+            // Yank the entire line (lhs + rhs).
+            this->yank_buffer = String(buffer.lhs_view()) + String(buffer.rhs_view());
+
+            // Apply the operation to the entire line.
+            if (op == 'd' || op == 'c') buffer.erase();
+
+            // Mode transition.
+            if (op == 'c') this->mode = Mode::INSERT;
+
+            return;
         }
-        // Unknown motion character: silently cancel (pending_op already cleared).
+
+        // Get the left-hand-side and right-hand-side views of the buffer.
+        const StringView lhs = buffer.lhs_view();
+        const StringView rhs = buffer.rhs_view();
+
+        // Get the total character count and cursor position of the buffer.
+        const PtrDiff buf_count  = static_cast<PtrDiff>(buffer.count());
+        const PtrDiff buf_cursor = static_cast<PtrDiff>(buffer.cursor());
+
+        switch (motion)
+        {
+            case 'w': apply_fwd(this, op, word_fwd_count(rhs, false)    ); break;
+            case 'W': apply_fwd(this, op, word_fwd_count(rhs, true )    ); break;
+            case 'b': apply_bwd(this, op, word_bwd_count(lhs, false)    ); break;
+            case 'B': apply_bwd(this, op, word_bwd_count(lhs, true )    ); break;
+            case 'e': apply_fwd(this, op, word_end_count(rhs, false) + 1); break;
+            case 'E': apply_fwd(this, op, word_end_count(rhs, true ) + 1); break;
+            case '0': apply_bwd(this, op, buf_cursor                    ); break;
+            case '$': apply_fwd(this, op, buf_count - buf_cursor        ); break;
+            case '^':
+            {
+                PtrDiff target  = first_nonblank_pos(lhs, rhs);
+                PtrDiff current = static_cast<PtrDiff>(buffer.cursor());
+                PtrDiff delta   = target - current;
+                if      (delta > 0) apply_fwd(this, op, +delta);
+                else if (delta < 0) apply_bwd(this, op, -delta);
+                break;
+            }
+
+            // Unknown motion characters are ignored silently (pending_op already cleared).
+            default: break;
+        }
     }
 
 }   // }}}

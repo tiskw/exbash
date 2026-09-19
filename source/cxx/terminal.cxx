@@ -15,8 +15,9 @@
 #include <sys/select.h>
 
 // Include the headers of custom modules.
-#include "utf8.hxx"
+#include "error.hxx"
 #include "string_utils.hxx"
+#include "utf8.hxx"
 #include "utils.hxx"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -82,6 +83,9 @@ TermUserIF::TermUserIF(uint16_t n_rows, uint16_t n_cols) : fd(STDIN_FILENO), rea
     for (uint16_t n = 0; n < n_rows; ++n)
         this->lines_prev.emplace_back("");
 
+    // Set the TUI flag for error messages.
+    set_tui_active(true);
+
     // Initialize the terminal attributes for reading from STDIN.
     this->ini_terminal_attr();
 
@@ -103,6 +107,9 @@ TermUserIF::~TermUserIF(void)
 
     // Clear the area to restore the terminal state.
     this->print("\x1B[0J", 4);
+
+    // Resume the TUI flag for error messages.
+    set_tui_active(false);
 
 }   // }}}
 

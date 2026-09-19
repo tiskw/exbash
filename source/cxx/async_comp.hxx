@@ -36,6 +36,17 @@ class AsyncComp
         // Member functions
         ////////////////////////////////////////////////////////////////////////////////////////////
 
+        String complete_sync(StringView lhs);
+        // Executes completion synchronously on the EditHelper owned by this class.
+        // Intended for the TAB key, which must return a result immediately.
+        // Mutually excluded with the worker thread via 'mtx_helper'.
+        //
+        // [Args]
+        //   lhs (StringView): [IN] Current left-hand-side string.
+        //
+        // [Returns]
+        //   (String): Completed left-hand-side string.
+
         Vector<String> get_completion_result(void);
         // Same interface as before; picks up results from the worker thread.
         //
@@ -99,6 +110,10 @@ class AsyncComp
 
         Vector<String> clines;
         // Cached display lines.
+
+        std::mutex mtx_helper;
+        // Guards every access to 'helper'. Note that 'mtx' and 'mtx_helper' are
+        // never held at the same time, hence no lock-ordering hazard exists.
 
         EditHelper helper;
         // Helper for computing completion candidates (used only in the worker thread).

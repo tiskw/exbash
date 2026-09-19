@@ -8,6 +8,9 @@
 // Include STL headers.
 #include <iostream>
 
+// Include POSIX headers.
+#include <unistd.h>
+
 // Include the header of the toml++ library.
 #define TOML_EXCEPTIONS 0
 #include <toml.hpp>
@@ -243,10 +246,7 @@ ExBashConfig load_config(StringView path_cfg)
     // Steal the table from the result.
     toml::table table = std::move(result).table();
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
     // Parse config contents
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-
     for (const auto& node_section : table)
     {
         // If the node is a table then read the values contained in the table.
@@ -254,6 +254,12 @@ ExBashConfig load_config(StringView path_cfg)
             for (auto node_value : *node_section.second.as_table())
                 set_config(cfg, table, node_section.first, node_value.first);
     }
+
+    // Postprocessing: replace {uid} in path_cmnd_info and path_bash_info.
+    const String uid_str = std::to_string(getuid());
+    cfg.path_cmnd_info = replace(cfg.path_cmnd_info, "{uid}", uid_str);
+    cfg.path_bash_info = replace(cfg.path_bash_info, "{uid}", uid_str);
+    cfg.output_plugin  = replace(cfg.output_plugin,  "{uid}", uid_str);
 
     return cfg;
 

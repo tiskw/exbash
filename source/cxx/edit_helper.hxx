@@ -69,8 +69,9 @@ class EditHelper
         Size area_size;
         // Size of the drawing area.
 
-        BashCompleter bash_completer;
+        Optional<BashCompleter> bash_completer;
         // An instance of BashCompleter for computing completion candidates from "bash-complete".
+        // The "Optional" is used to avoid unnecessary initialization of the BashCompleter instance.
 
         CarapaceService carapace_service;
         // An instance of CarapaceService for computing completion candidates from "carapace".
@@ -82,9 +83,8 @@ class EditHelper
         // Completion candidates.
 
         CandCacheMap cache_cands_lhs;
-        CandCacheMap cache_cands_mat;
         // Cache of completion candidates, where the key is the hash value of the left-hand-side
-        // string or the hash value of the matched token of the completion patterns.
+        // string of the completion target.
 
         Vector<String> lines;
         // Completion lines.

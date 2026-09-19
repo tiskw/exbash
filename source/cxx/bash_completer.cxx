@@ -98,8 +98,8 @@ BashCompleter::BashCompleter(void)
 
     // Create two pipes for communication with the child bash process.
     int to_bash[2], from_bash[2];
-    if ((pipe(to_bash) < 0) or (pipe(from_bash) < 0))
-        throw std::runtime_error(String("pipe() failed: ") + strerror(errno));
+    if ((pipe2(to_bash, O_CLOEXEC) < 0) or (pipe2(from_bash, O_CLOEXEC) < 0))
+        throw std::runtime_error(String("pipe2() failed: ") + strerror(errno));
 
     // Fork a child process to run bash.
     this->pid = fork();
@@ -146,9 +146,30 @@ BashCompleter::BashCompleter(void)
 BashCompleter::~BashCompleter(void)
 {   // {{{
 
+    // Close the pipes to the child process and reset the file descriptors.
     if (this->write_fd >= 0) { close(this->write_fd); this->write_fd = -1; }
     if (this->read_fd  >= 0) { close(this->read_fd);  this->read_fd  = -1; }
-    if (this->pid > 0)       { waitpid(this->pid, nullptr, 0); this->pid = -1; }
+
+    // Wait for the child process to exit, or force-kill it if it doesn't.
+    if (this->pid > 0)
+    {
+        // Give the child process a chance to exit gracefully.
+        for (int i = 0; i < 100; ++i)
+        {
+            if (waitpid(this->pid, nullptr, WNOHANG) != 0)
+            { this->pid = -1; break; }
+
+            usleep(10000);
+        }
+
+        // If the child process is still running, force-kill it.
+        if (this->pid > 0)
+        {
+            kill(this->pid, SIGKILL);
+            waitpid(this->pid, nullptr, 0);
+            this->pid = -1;
+        }
+    }
 
 }   // }}}
 

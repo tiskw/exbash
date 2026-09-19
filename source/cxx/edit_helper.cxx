@@ -256,7 +256,7 @@ namespace
 
     }   // }}}
 
-    Tuple<bool, SizeType> match(const Vector<String>& patterns, const Vector<StringView>& tokens, const Vector<std::regex>& patterns_regex)
+    bool match(const Vector<String>& patterns, const Vector<StringView>& tokens, const Vector<std::regex>& patterns_regex)
     // Return True if the given tokens matched with the given patterns.
     // The arguments `tokens` is a list of strings, and the argument `patterns`
     // are list of regular expression strings with the following extra special commands:
@@ -269,16 +269,12 @@ namespace
     //   tokens   (const Vector<String>&): [IN] List of strings to be matched.
     //
     // [Returns]
-    //   (bool)    : True is the given tokens matched with the given patterns.
-    //   (SizeType): Hash value of the matched tokens.
+    //   (bool): True is the given tokens matched with the given patterns.
     //
     {   // {{{
 
         // Initialize token index.
         SizeType index_token = 0;
-
-        // Initialize
-        uint64_t hash_val = hash(nullptr);
 
         // Run the for-loop based on the pattern index.
         for (SizeType index_pattern = 0; index_pattern < patterns.size(); ++index_pattern)
@@ -286,7 +282,7 @@ namespace
             // If the number of patterns is longer than the number of tokens
             // (i.e. token finished but pattern is exists yet), then returns false.
             if (index_token >= tokens.size())
-                return {false, 0};
+                return false;
 
             // Select target pattern and token.
             const String&    pattern = patterns[index_pattern];
@@ -299,33 +295,30 @@ namespace
             if (pattern == ">>")
                 index_token = tokens.size() - patterns.size() + index_pattern;
 
-            // Case 2: pattern is "FILE" but the file not exists.
-            else if (pattern == "FILE" and (not stdfs::exists(token)))
-                return {false, 0};
-
-            // Case 3: pattern is "FILE" and the file exists.
+            // Case 2: pattern is "FILE".
             else if (pattern == "FILE")
-                /* pass */;
+            {
+                // If the file does not exist, then returns false.
+                std::error_code ec;
+                if (not stdfs::exists(token, ec) or ec)
+                    return false;
 
-            // Case 4: others.
+                // Otherwise, the file exists, do nothing and continue to the next token.
+            }
+
+            // Case 3: others.
             else if (not regex_match(token.begin(), token.end(), pattern_regex))
-                return {false, 0};
-
-            // Update the hash value if the pattern is not ">>" that means skip.
-            // Note: In order to avoid hash collision by an empty token, the hash value of
-            //       an empty token is computed as the hash value of a newline character "\n".
-            if (pattern != ">>")
-                hash_val = hash(token.empty() ? "\n" : token, hash_val);
+                return false;
 
             ++index_token;
         };
 
         // No unprocessed tokens remains if the token matches with the pattern.
-        return {index_token == tokens.size(), hash_val};
+        return {index_token == tokens.size()};
 
     }   // }}}
 
-    Tuple<CompType, String, SizeType> get_target(const Vector<StringView>& tokens, const Vector<Completion>& completions, const Vector<Vector<std::regex>>& vec_patterns_regex)
+    Tuple<CompType, String> get_target(const Vector<StringView>& tokens, const Vector<Completion>& completions, const Vector<Vector<std::regex>>& vec_patterns_regex)
     // Returns a pair of target completion type and its optional string.
     //
     // [Args]
@@ -346,16 +339,70 @@ namespace
             const Vector<std::regex>& patterns_regex = vec_patterns_regex[idx];
 
             // Check if the given tokens match with the current pattern.
-            const auto [is_matched, hash_val] = match(patterns, tokens, patterns_regex);
+            const bool is_matched = match(patterns, tokens, patterns_regex);
 
             // Returns the current completion type and its optional string.
             if (is_matched)
-                return {comp_type, option, hash_val};
+                return {comp_type, option};
         }
 
-        return {CompType::NONE, String(""), SizeType(0)};
+        return {CompType::NONE, String("")};
 
     }   // }}}
+
+    const char* get_color(const String& name, const Path& path)
+    // Get color code based on the file type.
+    //
+    // [Args]
+    //   path (const Path&): [IN] File path for checking the file type.
+    //
+    // [Returns]
+    //   (const char*): Color code for the file type.
+    //
+    {   // {{{
+
+        // Case 1: Directory.
+        if ((name.size() > 0) and (name.back() == '/'))
+            return "\x1B[94m";
+
+        // Case 2: executable file.
+        std::error_code ec;
+        const stdfs::file_status status = stdfs::status(path, ec);
+        if ((not ec) and ((status.permissions() & stdfs::perms::owner_exec) != stdfs::perms::none))
+            return "\x1B[92m";
+
+        // Otherwise, return default color code.
+        return "\x1B[0m";
+
+    };  // }}}
+
+    String colorize_name(const String& name, const Path& path, const String& query_key)
+    // Colorize the file name based on the file type and the user input query key.
+    //
+    // [Args]
+    //   name      (const String&): [IN] File name to be colorized.
+    //   path      (const Path&  ): [IN] File path for checking the file type.
+    //   query_key (const String&): [IN] User input query key for colorization.
+    //
+    // [Returns]
+    //   (String): Colorized file name for display.
+    //
+    {   // {{{
+
+        // Initialize the color code.
+        const char* color_code = get_color(name, path);
+
+        // Returns withour query colorization if the query key is empty or the query key is invalid.
+        if (query_key.empty() or name.size() < query_key.size())
+            return color_code + name + "\x1B[0m";
+
+        // Colorize the matched query key.
+        String result = "\x1B[35m" + name + "\x1B[0m";
+        result.insert(query_key.size() + 5, color_code);
+
+        return result;
+
+    };  // }}}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -394,16 +441,7 @@ Vector<String> EditHelper::candidate(StringView lhs)
         tokens.push_back(StringView(""));
 
     // Get completion type and its optional string.
-    const auto& [comp_type, option, hash_mat] = get_target(tokens, this->completions, this->shared_future_vec_patterns_regex.get());
-
-    // If the completion key (= matched token) exists in the cache of matched token, use it.
-    // NOTE: BASHCOMP is excluded from mat-cache because its pattern [">>", ".*"] skips all leading
-    //       tokens (including the command name) when computing hash_mat, so two inputs with the
-    //       same partial word but different commands (e.g. "pip insta" vs "cargo insta") would
-    //       incorrectly share a single cache entry.  The lhs-cache (keyed on the full input) is
-    //       sufficient for BASHCOMP.
-    // if ((comp_type != CompType::BASHCOMP) and (comp_type != CompType::SC_AND_BC) and this->cache_cands_mat.contains(hash_mat))
-    //     return this->candidate_from_cache(this->cache_cands_mat, hash_mat);
+    const auto& [comp_type, option] = get_target(tokens, this->completions, this->shared_future_vec_patterns_regex.get());
 
     // Clear completion candidates before computed by the following switch statement.
     this->cands.clear();
@@ -433,12 +471,13 @@ Vector<String> EditHelper::candidate(StringView lhs)
 
     // Register the completion result to the cache.
     if (comp_type != CompType::NONE)
-    {
         this->cache_cands_lhs[hash_lhs] = {this->cands, this->lines};
-        // BASHCOMP is excluded from mat-cache for the same reason explained above.
-        if (comp_type != CompType::BASHCOMP)
-            this->cache_cands_mat[hash_mat] = {this->cands, this->lines};
-    }
+
+    // Clear the cache if the number of cache entries exceeds the maximum limit.
+    constexpr SizeType max_cache_entries = 256;
+    if (this->cache_cands_lhs.size() > max_cache_entries) { this->cache_cands_lhs.clear(); }
+    if (this->opt_cache.size()       > max_cache_entries) { this->opt_cache.clear();       }
+    if (this->subcmd_cache.size()    > max_cache_entries) { this->subcmd_cache.clear();    }
 
     return this->lines;
 
@@ -544,9 +583,15 @@ Vector<String> EditHelper::candidate_from_cache(const CandCacheMap& cache, uint6
 void EditHelper::cands_bashcomp(StringView lhs, const Vector<StringView>& tokens)
 {   // {{{
 
-    for (const String& c : this->bash_completer.complete(lhs))
+    // Construct bash-completion instance if it is not constructed yet.
+    if (not this->bash_completer.has_value())
+        this->bash_completer.emplace();
+
+    // Compute completion candidates from bash-completion.
+    for (const String& c : this->bash_completer->complete(lhs))
         this->cands.emplace_back(c, c);
 
+    // If no candidates found from bash-completion, then compute candidates from file path.
     if (this->cands.empty())
         this->cands_filepath(tokens);
 
@@ -599,38 +644,6 @@ void EditHelper::cands_carapace(const Vector<StringView>& tokens)
 
 void EditHelper::cands_filepath(const Vector<StringView>& tokens)
 {   // {{{
-
-    constexpr auto colorize_name = [](const String& name, const Path& path, const String& query_key) noexcept -> String
-    // Colorize the file name based on the file type and the user input query key.
-    //
-    // [Args]
-    //   name      (const String&): [IN] File name to be colorized.
-    //   path      (const Path&  ): [IN] File path for checking the file type.
-    //   query_key (const String&): [IN] User input query key for colorization.
-    //
-    // [Returns]
-    //   (String): Colorized file name for display.
-    {
-        const char* color_code = "\x1B[0m";
-
-        // Case 1: Directory.
-        if ((name.size() > 0) and (name.back() == '/'))
-            color_code = "\x1B[94m";
-
-        // Case 2: executable file.
-        else if ((stdfs::status(path).permissions() & stdfs::perms::owner_exec) != stdfs::perms::none)
-             color_code = "\x1B[92m";
-
-        // Returns withour query colorization if the query key is empty or the query key is invalid.
-        if (query_key.empty() or name.size() < query_key.size())
-            return color_code + name + "\x1B[0m";
-
-        // Colorize the matched query key.
-        String result = "\x1B[35m" + name + "\x1B[0m";
-        result.insert(query_key.size() + 5, color_code);
-
-        return result;
-    };
 
     // Split user input token to a tuple of:
     //   * directory path to be searched,
@@ -790,7 +803,9 @@ void EditHelper::cands_preview(const Vector<StringView>& tokens)
     const StringView path = get_last_nonwhitespace_token(tokens);
 
     // Compute width of the preview window.
-    const uint16_t width_prev = this->area_size.cols - int(this->area_size.cols * this->preview_ratio) - this->preview_delim.size();
+    const uint16_t width_prev = static_cast<uint16_t>(max(static_cast<int32_t>(this->area_size.cols)
+                                                        - static_cast<int32_t>(this->area_size.cols * this->preview_ratio)
+                                                        - static_cast<int32_t>(this->preview_delim.size()), 1));
 
     // Get preview result.
     Vector<String> preview_lines = preview(path, this->area_size.rows, this->previews);

@@ -46,11 +46,11 @@ struct ExBashConfig
     String hline_color = "";
 
     // Path to info files.
-    String path_cmnd_info = "/tmp/exbash/cmnd_info.txt";
-    String path_bash_info = "/tmp/exbash/bash_info.txt";
+    String path_cmnd_info = "/tmp/exbash-{uid}/cmnd_info.txt";
+    String path_bash_info = "/tmp/exbash-{uid}/bash_info.txt";
 
     // Path to plugin output file.
-    String output_plugin = "/dev/shm/exbash/plugin.out";
+    String output_plugin = "/dev/shm/exbash-{uid}/plugin.out";
 
     ////////////////////////////////////////////////////////////////////////////
     // Prompt strings.

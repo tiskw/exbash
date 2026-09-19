@@ -33,7 +33,7 @@ namespace
         if (rhs.empty()) return 0;
 
         // Get the character info vector for rhs, and if it's empty, return 0.
-        const Vector<CharInfo> chars = TextEditor::collect_chars(rhs);
+        const Vector<CharInfo> chars = TextEditor::collect_char_info(rhs);
         if (chars.empty()) return 0;
 
         SizeType idx   = 0;
@@ -56,7 +56,7 @@ namespace
         if (lhs.empty()) return 0;
 
         // Get the character info vector for lhs, and if it's empty, return 0.
-        const Vector<CharInfo> chars = TextEditor::collect_chars(lhs);
+        const Vector<CharInfo> chars = TextEditor::collect_char_info(lhs);
         if (chars.empty()) return 0;
 
         int32_t idx   = static_cast<int32_t>(chars.size()) - 1;
@@ -79,7 +79,7 @@ namespace
         if (lhs.empty()) return 0;
 
         // Get the character info vector for rhs, and if it's empty, return 0.
-        const Vector<CharInfo> chars = TextEditor::collect_chars(lhs);
+        const Vector<CharInfo> chars = TextEditor::collect_char_info(lhs);
         if (chars.empty()) return 0;
 
         int32_t idx   = static_cast<int32_t>(chars.size()) - 1;
@@ -416,7 +416,7 @@ void TextEditorEmacs::word_case_transform(int wcase)
     StringView rhs    = buffer.rhs_view();
     if (rhs.empty()) return;
 
-    const auto chars = collect_chars(rhs);
+    const auto chars = collect_char_info(rhs);
     SizeType   idx   = 0;
     PtrDiff    skip  = 0;
 
